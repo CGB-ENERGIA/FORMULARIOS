@@ -4,7 +4,9 @@ import type { Consumidor, ObraInfo } from '../stores/consumidores';
 import { getConsumidoresPreenchidos } from './consumidor-helpers';
 import { buildExportFileName } from './export-helpers';
 
-const BANNER_URL = '/template/banner.png';
+import { publicAsset } from './assets';
+
+const BANNER_URL = publicAsset('template/banner.png');
 
 async function loadBannerBase64(): Promise<string> {
   const response = await fetch(BANNER_URL);

@@ -32,3 +32,10 @@ bun run build
 ```
 
 Os arquivos ficam em `dist/spa`.
+
+## Publicação (GitHub Pages)
+
+URL: https://italoproject.github.io/consumidores-web/
+
+O deploy é feito automaticamente via GitHub Actions ao push na branch `main`.
+Nas configurações do repositório, em **Pages**, a origem deve ser **GitHub Actions** (não a branch `main` na raiz).

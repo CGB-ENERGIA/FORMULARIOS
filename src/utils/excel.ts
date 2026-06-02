@@ -5,8 +5,10 @@ import { buildExportFileName } from './export-helpers';
 
 export { consumidorPreenchido } from './consumidor-helpers';
 
-const TEMPLATE_URL = '/template/CONSUMIDORES.xlsx';
-const BANNER_URL = '/template/banner.png';
+import { publicAsset } from './assets';
+
+const TEMPLATE_URL = publicAsset('template/CONSUMIDORES.xlsx');
+const BANNER_URL = publicAsset('template/banner.png');
 const SHEET_NAME = 'CONSUMIDORES#';
 const FIRST_DATA_ROW = 30;
 const LAST_DATA_ROW = 524;

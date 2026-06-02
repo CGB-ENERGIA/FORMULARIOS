@@ -1,10 +1,13 @@
 import { configure } from 'quasar/wrappers';
 
+const publicPath = process.env.QUASAR_PUBLIC_PATH || '/';
+
 export default configure(() => ({
   boot: ['pinia'],
   css: ['app.scss'],
   extras: ['roboto-font', 'material-icons'],
   build: {
+    publicPath,
     target: {
       browser: ['es2022', 'firefox115', 'chrome115', 'safari14'],
       node: 'node20',
