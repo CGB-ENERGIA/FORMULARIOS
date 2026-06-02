@@ -37,5 +37,4 @@ Os arquivos ficam em `dist/spa`.
 
 URL: https://italoproject.github.io/consumidores-web/
 
-O deploy é feito automaticamente via GitHub Actions ao push na branch `main`.
-Nas configurações do repositório, em **Pages**, a origem deve ser **GitHub Actions** (não a branch `main` na raiz).
+O deploy publica o build na branch `gh-pages`. Em **Settings → Pages**, a origem deve ser **Deploy from branch** → branch `gh-pages` → pasta `/`.
