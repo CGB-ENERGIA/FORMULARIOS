@@ -1,6 +1,10 @@
-# Relação de Consumidores Ligados na Obra
+# Formulários
 
-Formulário web baseado na planilha `CONSUMIDORES.xlsx`, desenvolvido com **Bun** e **Quasar**.
+Plataforma de formulários digitais da CGB Engenharia, desenvolvida com **Bun** e **Quasar**.
+
+## Formulários disponíveis
+
+- **Consumidores Ligados na Obra** — relação baseada na planilha `CONSUMIDORES.xlsx`
 
 ## Requisitos
 
@@ -18,6 +22,7 @@ O navegador abrirá automaticamente em `http://localhost:9000`.
 
 ## Funcionalidades
 
+- Menu lateral com navegação entre formulários
 - Preenchimento das informações da obra (descrição, fornecedor, PEP, datas, regional, etc.)
 - Tabela editável de consumidores com os mesmos campos da planilha
 - Adicionar e remover linhas de consumidores

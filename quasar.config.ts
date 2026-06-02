@@ -28,7 +28,17 @@ export default configure(() => ({
     open: true,
   },
   framework: {
-    config: {},
+    config: {
+      brand: {
+        primary: '#2563eb',
+        secondary: '#7c3aed',
+        accent: '#06b6d4',
+        positive: '#10b981',
+        negative: '#ef4444',
+        info: '#3b82f6',
+        warning: '#f59e0b',
+      },
+    },
     plugins: ['Notify', 'Dialog'],
   },
 }));

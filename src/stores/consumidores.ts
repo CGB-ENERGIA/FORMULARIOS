@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { consumidorComDados } from '../utils/consumidor-helpers';
 
 export const FORNECEDOR_FIXO = 'CGB ENGENHARIA' as const;
 export const REGIONAL_FIXA = 'CENTRO' as const;
@@ -68,14 +69,23 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
     obra.value.dataConclusao = data;
     obra.value.dataEnergizacao = data;
     consumidores.value.forEach((consumidor) => {
-      consumidor.dataLigacao = data;
+      if (consumidorComDados(consumidor)) {
+        consumidor.dataLigacao = data;
+      }
     });
   }
 
+  function touchConsumidor(consumidor: Consumidor) {
+    const dataObra = obra.value.dataEnergizacao || obra.value.dataConclusao;
+    if (consumidorComDados(consumidor) && dataObra) {
+      consumidor.dataLigacao = dataObra;
+      return;
+    }
+    consumidor.dataLigacao = '';
+  }
+
   function addConsumidor() {
-    const consumidor = createEmptyConsumidor(consumidores.value.length + 1);
-    consumidor.dataLigacao = obra.value.dataEnergizacao || obra.value.dataConclusao;
-    consumidores.value.push(consumidor);
+    consumidores.value.push(createEmptyConsumidor(consumidores.value.length + 1));
   }
 
   function removeConsumidor(index: number) {
@@ -101,5 +111,5 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
     consumidores.value = Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1));
   }
 
-  return { obra, consumidores, addConsumidor, removeConsumidor, resetForm, syncDatas };
+  return { obra, consumidores, addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor };
 });

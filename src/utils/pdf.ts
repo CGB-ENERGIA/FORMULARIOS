@@ -28,7 +28,7 @@ function markCheckbox(active: boolean) {
   return active ? 'X' : '';
 }
 
-function buildConsumidorRow(c: Consumidor, dataObra: string) {
+function buildConsumidorRow(c: Consumidor) {
   return [
     String(c.id),
     c.nome,
@@ -44,7 +44,7 @@ function buildConsumidorRow(c: Consumidor, dataObra: string) {
     markCheckbox(c.ramalTriplex === 'PADRAO'),
     markCheckbox(c.ramalTriplex === 'KIT'),
     c.posteLigacao,
-    c.dataLigacao || dataObra,
+    c.dataLigacao,
   ];
 }
 
@@ -89,7 +89,6 @@ export async function exportToPdf(obra: ObraInfo, consumidores: Consumidor[]) {
 
   const banner = await loadBannerBase64();
   const fileName = buildExportFileName(obra, 'pdf');
-  const dataObra = obra.dataEnergizacao || obra.dataConclusao;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   doc.addImage(banner, 'PNG', 8, 6, 281, 22);
@@ -133,7 +132,7 @@ export async function exportToPdf(obra: ObraInfo, consumidores: Consumidor[]) {
       ],
       ['MO', 'BI', 'TRI', '5M', '7M', 'CPP', 'PADRÃO', 'KIT', 'PADRÃO', 'KIT'],
     ],
-    body: preenchidos.map((consumidor) => buildConsumidorRow(consumidor, dataObra)),
+    body: preenchidos.map((consumidor) => buildConsumidorRow(consumidor)),
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
       2: { halign: 'center', cellWidth: 22 },

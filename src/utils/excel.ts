@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import type { Consumidor, ObraInfo } from '../stores/consumidores';
-import { consumidorPreenchido } from './consumidor-helpers';
+import { getConsumidoresPreenchidos } from './consumidor-helpers';
 import { buildExportFileName } from './export-helpers';
 
 export { consumidorPreenchido } from './consumidor-helpers';
@@ -77,7 +77,7 @@ function fillObraInfo(sheet: ExcelJS.Worksheet, obra: ObraInfo) {
   sheet.getCell('O18').value = obra.municipio;
 }
 
-function fillConsumidor(sheet: ExcelJS.Worksheet, row: number, consumidor: Consumidor, dataObra: string) {
+function fillConsumidor(sheet: ExcelJS.Worksheet, row: number, consumidor: Consumidor) {
   sheet.getCell(`B${row}`).value = consumidor.id;
   sheet.getCell(`C${row}`).value = consumidor.nome;
   sheet.getCell(`I${row}`).value = consumidor.numeroMedidor;
@@ -98,7 +98,7 @@ function fillConsumidor(sheet: ExcelJS.Worksheet, row: number, consumidor: Consu
   if (consumidor.ramalTriplex === 'KIT') markCheckbox(sheet, row, 'S');
 
   sheet.getCell(`U${row}`).value = consumidor.posteLigacao;
-  sheet.getCell(`V${row}`).value = consumidor.dataLigacao || dataObra;
+  sheet.getCell(`V${row}`).value = consumidor.dataLigacao;
 }
 
 function downloadBuffer(buffer: ArrayBuffer, fileName: string) {
@@ -126,14 +126,14 @@ export async function exportToExcel(obra: ObraInfo, consumidores: Consumidor[]) 
   replaceBannerImage(workbook, sheet, bannerBuffer);
   fillObraInfo(sheet, obra);
 
+  const preenchidos = getConsumidoresPreenchidos(consumidores);
+
   for (let row = FIRST_DATA_ROW; row <= LAST_DATA_ROW; row++) {
     clearConsumerRow(sheet, row);
   }
 
-  const dataObra = obra.dataEnergizacao || obra.dataConclusao;
-
-  consumidores.forEach((consumidor, index) => {
-    fillConsumidor(sheet, FIRST_DATA_ROW + index, consumidor, dataObra);
+  preenchidos.forEach((consumidor, index) => {
+    fillConsumidor(sheet, FIRST_DATA_ROW + index, consumidor);
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
