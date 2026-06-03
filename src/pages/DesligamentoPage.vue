@@ -375,12 +375,15 @@
               <!-- Preview -->
               <div
                 v-if="evidencias[i]"
-                class="evidencia-preview relative-position"
+                class="evidencia-zone evidencia-zone--filled relative-position"
+                tabindex="0"
+                title="Ctrl+V para colar novo print"
+                @paste="(e) => handleEvidenciaPaste(e, i)"
               >
                 <img
                   :src="evidencias[i]!"
                   class="evidencia-img"
-                  style="width:100%; max-height:260px; object-fit:contain; border-radius:8px; border:1px solid #e0e0e0;"
+                  style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
                 />
                 <q-btn
                   icon="close"
@@ -389,19 +392,21 @@
                   size="sm"
                   color="negative"
                   class="absolute-top-right q-ma-xs"
-                  @click="removeEvidencia(i)"
+                  @click.stop="removeEvidencia(i)"
                 />
               </div>
 
               <!-- Upload zone -->
               <div
                 v-else
-                class="evidencia-upload-zone cursor-pointer flex flex-center column"
-                style="border:2px dashed #bdbdbd; border-radius:8px; height:180px; gap:8px;"
+                class="evidencia-zone evidencia-zone--empty cursor-pointer flex flex-center column"
+                tabindex="0"
                 @click="triggerEvidenciaUpload(i)"
+                @paste="(e) => handleEvidenciaPaste(e, i)"
+                @keydown.enter="triggerEvidenciaUpload(i)"
               >
                 <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
-                <span class="text-grey-6 text-caption">Clique para adicionar foto</span>
+                <span class="text-grey-6 text-caption">Clique ou cole (Ctrl+V)</span>
               </div>
 
               <input
@@ -444,7 +449,7 @@
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useDesligamentoStore } from 'src/stores/desligamento';
 import { parseSiMesFromPdf, parseConsumidoresFromPdf, parseDatesFromPdf } from 'src/utils/parse-si-pdf';
 import {
@@ -545,6 +550,67 @@ function handleEvidenciaChange(event: Event, index: number) {
 function removeEvidencia(index: number) {
   evidencias.value[index] = null;
 }
+
+function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleEvidenciaPaste(event: ClipboardEvent, index: number) {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (!file) continue;
+      event.preventDefault();
+      try {
+        evidencias.value[index] = await readImageFile(file);
+        $q.notify({ type: 'positive', message: `Evidência ${index + 1} colada com sucesso.` });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+      }
+      return;
+    }
+  }
+}
+
+// Listener global: Ctrl+V cola na primeira evidência vazia disponível
+async function handleGlobalPaste(event: ClipboardEvent) {
+  // Só atua se o foco NÃO estiver dentro de uma zona de evidência
+  // (essas já têm seu próprio handler)
+  const active = document.activeElement;
+  if (active?.closest('.evidencia-zone')) return;
+
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (!file) continue;
+      const emptyIdx = evidencias.value.findIndex((v) => v === null);
+      if (emptyIdx === -1) {
+        $q.notify({ type: 'warning', message: 'Todos os slots de evidência já estão preenchidos.' });
+        return;
+      }
+      event.preventDefault();
+      try {
+        evidencias.value[emptyIdx] = await readImageFile(file);
+        $q.notify({ type: 'positive', message: `Print colado na Evidência ${emptyIdx + 1}.` });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+      }
+      return;
+    }
+  }
+}
+
+onMounted(() => document.addEventListener('paste', handleGlobalPaste));
+onUnmounted(() => document.removeEventListener('paste', handleGlobalPaste));
 
 const protocolarOpcoes = [
   { label: 'Sim', value: 'SIM' as const },

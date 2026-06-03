@@ -617,6 +617,32 @@ body {
   gap: 8px;
 }
 
+.evidencia-zone {
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &--empty {
+    border: 2px dashed #bdbdbd;
+    height: 180px;
+    gap: 8px;
+
+    &:focus, &:focus-within {
+      border-color: var(--q-primary, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+  }
+
+  &--filled {
+    border: 1px solid #e0e0e0;
+
+    &:focus {
+      border-color: var(--q-primary, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+  }
+}
+
 .search-bar {
   display: flex;
   align-items: center;
