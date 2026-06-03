@@ -225,6 +225,20 @@
           </div>
         </div>
 
+        <q-input
+          v-model="searchQuery"
+          outlined
+          dense
+          placeholder="Buscar por nome, contrato ou medidor…"
+          style="min-width: 260px"
+          clearable
+          hide-bottom-space
+        >
+          <template #prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+
         <div class="action-bar__actions">
           <q-btn
             outline
@@ -270,7 +284,7 @@
           <q-table
             class="consumidores-table desligamento-table"
             flat
-            :rows="consumidores"
+            :rows="filteredConsumidores"
             :columns="columns"
             row-key="id"
             :pagination="{ rowsPerPage: 0 }"
@@ -532,6 +546,19 @@ const protocolarOpcoes = [
 ];
 
 const columns: QTableColumn[] = [{ name: 'id', label: 'Nº', field: 'id' }];
+
+const searchQuery = ref('');
+
+const filteredConsumidores = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return consumidores.value;
+  return consumidores.value.filter(
+    (c) =>
+      c.nomeCompleto.toLowerCase().includes(q) ||
+      c.contaContrato.toLowerCase().includes(q) ||
+      c.numeroMedidor.toLowerCase().includes(q),
+  );
+});
 
 const preenchidosCount = computed(
   () => consumidores.value.filter(consumidorDesligamentoComDados).length,
