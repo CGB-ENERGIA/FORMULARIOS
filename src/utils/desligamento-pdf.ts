@@ -51,6 +51,14 @@ async function loadBannerBase64(): Promise<string> {
   return `data:image/png;base64,${btoa(bin)}`;
 }
 
+function parseBR(v: string): number {
+  return parseFloat(v.replace('.', '').replace(',', '.')) || 0;
+}
+
+function formatBR(n: number): string {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function timeOnly(dt: string): string {
   if (!dt) return '';
   const p = dt.trim().split(' ');
@@ -187,14 +195,19 @@ export async function exportDesligamentoToPdf(
 
   // Protocolo / Valor (faixa azul escura)
   const pAt = ty(176), pAb = ty(184), pBt = ty(184), pBb = ty(192);
+  const vUnit1 = parseBR(solicitacao.valorUnitarioSemProtocolo);
+  const vUnit2 = parseBR(solicitacao.valorUnitarioComProtocolo);
+  const vTotal1 = vUnit1 * qtdSem;
+  const vTotal2 = vUnit2 * qtdCom;
+
   drawCell(doc, tx(58),  pAt, tx(164), pAb, { fill: DBLUE, text: 'S/ PROTOCOLO', color: WHITE, bold: true, align: 'center', size: 7 });
-  drawCell(doc, tx(164), pAt, tx(210), pAb, { fill: LBLUE });
+  drawCell(doc, tx(164), pAt, tx(210), pAb, { fill: LBLUE, text: `R$ ${formatBR(vUnit1)}`, align: 'center', bold: true, size: 7 });
   drawCell(doc, tx(210), pAt, tx(261), pAb, { fill: DBLUE, text: 'VALOR R$', color: WHITE, bold: true, align: 'center', size: 7 });
-  drawCell(doc, tx(261), pAt, tx(337), pAb, { fill: LBLUE });
+  drawCell(doc, tx(261), pAt, tx(337), pAb, { fill: LBLUE, text: `R$ ${formatBR(vTotal1)}`, align: 'center', bold: true, size: 7 });
   drawCell(doc, tx(58),  pBt, tx(164), pBb, { fill: DBLUE, text: 'C/ PROTOCOLO', color: WHITE, bold: true, align: 'center', size: 7 });
-  drawCell(doc, tx(164), pBt, tx(210), pBb, { fill: LBLUE });
+  drawCell(doc, tx(164), pBt, tx(210), pBb, { fill: LBLUE, text: `R$ ${formatBR(vUnit2)}`, align: 'center', bold: true, size: 7 });
   drawCell(doc, tx(210), pBt, tx(261), pBb, { fill: DBLUE, text: 'VALOR R$', color: WHITE, bold: true, align: 'center', size: 7 });
-  drawCell(doc, tx(261), pBt, tx(337), pBb, { fill: LBLUE });
+  drawCell(doc, tx(261), pBt, tx(337), pBb, { fill: LBLUE, text: `R$ ${formatBR(vTotal2)}`, align: 'center', bold: true, size: 7 });
 
   // ── EVIDÊNCIAS ─────────────────────────────────────────────────────────────
   const evBar1 = ty(195), evBar2 = ty(203);

@@ -171,6 +171,26 @@
             </div>
             <div class="col-12 col-md-6">
               <q-input
+                v-model="solicitacao.valorUnitarioSemProtocolo"
+                label="Valor unitário s/ protocolo (R$)"
+                outlined
+                dense
+                hide-bottom-space
+                placeholder="7,04"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input
+                v-model="solicitacao.valorUnitarioComProtocolo"
+                label="Valor unitário c/ protocolo (R$)"
+                outlined
+                dense
+                hide-bottom-space
+                placeholder="8,24"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input
                 :model-value="String(qtdSemProtocolo)"
                 label="Qtd. s/ protocolo"
                 outlined

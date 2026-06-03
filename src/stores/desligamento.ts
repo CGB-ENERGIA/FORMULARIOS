@@ -20,6 +20,8 @@ export interface DesligamentoSI {
   fimDesligamento: string;
   numeroOperacional: string;
   numeroBarramento: string;
+  valorUnitarioSemProtocolo: string;
+  valorUnitarioComProtocolo: string;
 }
 
 export interface DesligamentoConsumidor {
@@ -58,6 +60,8 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
     fimDesligamento: '',
     numeroOperacional: '',
     numeroBarramento: '',
+    valorUnitarioSemProtocolo: '7,04',
+    valorUnitarioComProtocolo: '8,24',
   });
 
   const consumidores = ref<DesligamentoConsumidor[]>(
@@ -96,6 +100,8 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
       fimDesligamento: '',
       numeroOperacional: '',
       numeroBarramento: '',
+      valorUnitarioSemProtocolo: '7,04',
+      valorUnitarioComProtocolo: '8,24',
     };
     consumidores.value = Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1));
     evidencias.value = Array(8).fill(null);
