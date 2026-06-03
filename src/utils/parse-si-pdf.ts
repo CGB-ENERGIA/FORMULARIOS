@@ -116,40 +116,61 @@ export async function parseSiMesFromPdf(file: File): Promise<string> {
   return siMatch[1]!;
 }
 
+// Prefixo de medidor: "MA.ND." ou "MA. ND." etc. (sem os dígitos finais)
+const MEDIDOR_PREFIX = /^[A-Z]{2,}\s*\.\s*[A-Z]{2,}\s*\./;
+
 export async function parseConsumidoresFromPdf(file: File): Promise<ConsumidorPdfData[]> {
   const items = await extractItems(file);
-  const rows = groupRows(items);
+  // Tolerância maior para agrupar linhas de nomes que quebram (ex: y difere 6pt)
+  const rows = groupRows(items, 3);
   const result: ConsumidorPdfData[] = [];
 
-  for (const row of rows) {
-    // Une todos os itens da linha em uma string (resolve splits do pdfjs)
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri]!;
+    // Une todos os itens da linha em uma string
     const line = row.map((c) => c.str).join(' ').trim();
+    const tokens = line.split(/\s+/);
 
-    // Medidor: XX.XX.DDDDDDD (aceita espaços entre as partes por causa do pdfjs)
-    // Ex: "MA.ND.10131344355" ou "MA. ND. 10131344355"
-    const medidorMatch = line.match(/([A-Z]{2,}\s*\.\s*[A-Z]{2,}\s*\.\s*\d{6,})/);
-    if (!medidorMatch) continue;
+    // Linha deve começar com prefixo de medidor (MA.ND. ou MA. ND. etc.)
+    const firstToken = tokens[0] ?? '';
+    if (!MEDIDOR_PREFIX.test(firstToken)) continue;
 
-    const medidorRaw = medidorMatch[0]!;
-    // Remove prefixo "MA.ND." → deixa só o número
-    const medidorNumero = medidorRaw.replace(/\s+/g, '').replace(/^(?:[A-Z]+\.)+/, '');
+    // Extrai o número do medidor do primeiro token
+    // "MA.ND.10131344355" → "10131344355" | "MA.ND." → ""
+    const medidorNumero = firstToken.replace(/\s+/g, '').replace(/^(?:[A-Z]+\.)+/, '');
 
-    // Resto da linha após o medidor
-    const afterMedidor = line.slice(medidorMatch.index! + medidorRaw.length).trim();
-
-    // Tokens separados por espaço
-    const tokens = afterMedidor.split(/\s+/);
-
-    // Primeiro token = contrato (5+ dígitos)
-    const contrato = tokens[0];
-    if (!contrato || !/^\d{5,}$/.test(contrato)) continue;
-
-    // Nome: tokens seguintes até encontrar "(" (início do ENTREGUE)
-    const nomeTokens: string[] = [];
-    for (const token of tokens.slice(1)) {
-      if (token === '(' || ENTREGUE_TOKENS.has(token)) break;
-      nomeTokens.push(token);
+    // Contrato: primeiro token com 5+ dígitos após o medidor
+    // (ignora se o regex anterior tiver engolido o contrato junto)
+    let contratoIdx = -1;
+    for (let i = 1; i < tokens.length; i++) {
+      if (/^\d{5,}$/.test(tokens[i]!)) { contratoIdx = i; break; }
     }
+    if (contratoIdx < 0) continue;
+    const contrato = tokens[contratoIdx]!;
+
+    // Nome: tokens após o contrato até "(" ou token de entregue
+    const nomeTokens: string[] = [];
+    for (let i = contratoIdx + 1; i < tokens.length; i++) {
+      const t = tokens[i]!;
+      if (t === '(' || ENTREGUE_TOKENS.has(t)) break;
+      nomeTokens.push(t);
+    }
+
+    // Se o nome ficou vazio, verifica a próxima linha por continuação
+    // (nome longo que quebrou para a linha seguinte no PDF)
+    if (nomeTokens.length === 0 && ri + 1 < rows.length) {
+      const nextRow = rows[ri + 1]!;
+      const nextLine = nextRow.map((c) => c.str).join(' ').trim();
+      const nextTokens = nextLine.split(/\s+/);
+      // Linha de continuação: não começa com medidor e não tem número de contrato logo no início
+      if (nextTokens[0] && !MEDIDOR_PREFIX.test(nextTokens[0])) {
+        for (const t of nextTokens) {
+          if (t === '(' || ENTREGUE_TOKENS.has(t) || /^\d{5,}$/.test(t)) break;
+          nomeTokens.push(t);
+        }
+      }
+    }
+
     if (nomeTokens.length === 0) continue;
 
     result.push({
