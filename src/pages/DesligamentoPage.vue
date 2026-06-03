@@ -225,19 +225,25 @@
           </div>
         </div>
 
-        <q-input
-          v-model="searchQuery"
-          outlined
-          dense
-          placeholder="Buscar por nome, contrato ou medidor…"
-          style="min-width: 260px"
-          clearable
-          hide-bottom-space
-        >
-          <template #prepend>
-            <q-icon name="search" />
-          </template>
-        </q-input>
+        <div class="search-bar">
+          <q-icon name="search" size="18px" class="search-bar__icon" />
+          <input
+            v-model="searchQuery"
+            class="search-bar__input"
+            type="text"
+            placeholder="Buscar por nome, contrato ou nº medidor"
+          />
+          <q-btn
+            v-if="searchQuery"
+            flat
+            round
+            dense
+            icon="close"
+            size="xs"
+            class="search-bar__clear"
+            @click="searchQuery = ''"
+          />
+        </div>
 
         <div class="action-bar__actions">
           <q-btn
