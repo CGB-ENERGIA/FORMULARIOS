@@ -156,17 +156,32 @@ export async function parseConsumidoresFromPdf(file: File): Promise<ConsumidorPd
       nomeTokens.push(t);
     }
 
-    // Se o nome ficou vazio, verifica a próxima linha por continuação
-    // (nome longo que quebrou para a linha seguinte no PDF)
-    if (nomeTokens.length === 0 && ri + 1 < rows.length) {
-      const nextRow = rows[ri + 1]!;
-      const nextLine = nextRow.map((c) => c.str).join(' ').trim();
-      const nextTokens = nextLine.split(/\s+/);
-      // Linha de continuação: não começa com medidor e não tem número de contrato logo no início
-      if (nextTokens[0] && !MEDIDOR_PREFIX.test(nextTokens[0])) {
-        for (const t of nextTokens) {
-          if (t === '(' || ENTREGUE_TOKENS.has(t) || /^\d{5,}$/.test(t)) break;
-          nomeTokens.push(t);
+    // Se o nome ficou vazio, o nome pode estar em linhas adjacentes
+    // (ex: nome longo quebra para antes E depois da linha do medidor)
+    if (nomeTokens.length === 0) {
+      // 1) Linha ANTERIOR (nome começa antes do medidor no eixo Y)
+      if (ri > 0) {
+        const prevRow = rows[ri - 1]!;
+        const prevLine = prevRow.map((c) => c.str).join(' ').trim();
+        const prevTokens = prevLine.split(/\s+/);
+        if (prevTokens[0] && !MEDIDOR_PREFIX.test(prevTokens[0])) {
+          for (const t of prevTokens) {
+            if (t === '(' || ENTREGUE_TOKENS.has(t) || /^\d{5,}$/.test(t)) break;
+            nomeTokens.push(t);
+          }
+        }
+      }
+
+      // 2) Linha SEGUINTE (continuação após o medidor)
+      if (ri + 1 < rows.length) {
+        const nextRow = rows[ri + 1]!;
+        const nextLine = nextRow.map((c) => c.str).join(' ').trim();
+        const nextTokens = nextLine.split(/\s+/);
+        if (nextTokens[0] && !MEDIDOR_PREFIX.test(nextTokens[0])) {
+          for (const t of nextTokens) {
+            if (t === '(' || ENTREGUE_TOKENS.has(t) || /^\d{5,}$/.test(t)) break;
+            nomeTokens.push(t);
+          }
         }
       }
     }
