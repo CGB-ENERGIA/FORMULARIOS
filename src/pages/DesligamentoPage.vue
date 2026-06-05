@@ -414,14 +414,21 @@
               <div
                 v-if="evidencias[i]"
                 class="evidencia-zone evidencia-zone--filled relative-position"
+                :class="evidenciaZoneClass(i)"
                 tabindex="0"
-                title="Ctrl+V para colar novo print"
+                title="Arraste a imagem para outro quadrado ou cole com Ctrl+V"
+                @click="selectEvidencia(i, $event)"
                 @paste="(e) => handleEvidenciaPaste(e, i)"
+                @dragover="handleEvidenciaDragOver(i, $event)"
+                @drop="handleEvidenciaDrop(i, $event)"
               >
                 <img
                   :src="evidencias[i]!"
-                  class="evidencia-img"
+                  draggable="true"
+                  class="evidencia-img evidencia-img--draggable"
                   style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
+                  @dragstart="handleEvidenciaDragStart(i, $event)"
+                  @dragend="handleEvidenciaDragEnd"
                 />
                 <q-btn
                   icon="close"
@@ -437,14 +444,28 @@
               <!-- Upload zone -->
               <div
                 v-else
-                class="evidencia-zone evidencia-zone--empty cursor-pointer flex flex-center column"
+                class="evidencia-zone evidencia-zone--empty flex flex-center column"
+                :class="evidenciaZoneClass(i)"
                 tabindex="0"
-                @click="triggerEvidenciaUpload(i)"
+                title="Selecione o quadrado, cole com Ctrl+V ou solte uma imagem arrastada"
+                @click="selectEvidencia(i, $event)"
                 @paste="(e) => handleEvidenciaPaste(e, i)"
-                @keydown.enter="triggerEvidenciaUpload(i)"
+                @keydown.enter="selectEvidencia(i, $event)"
+                @dragover="handleEvidenciaDragOver(i, $event)"
+                @drop="handleEvidenciaDrop(i, $event)"
               >
-                <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
-                <span class="text-grey-6 text-caption">Clique ou cole (Ctrl+V)</span>
+                <button
+                  type="button"
+                  class="evidencia-zone__upload-trigger"
+                  aria-label="Anexar imagem"
+                  @click.stop="triggerEvidenciaUpload(i)"
+                >
+                  <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
+                  <span class="text-grey-6 text-caption">Clique para anexar</span>
+                </button>
+                <span class="evidencia-zone__paste-hint text-grey-6 text-caption">
+                  ou selecione, cole (Ctrl+V) ou arraste
+                </span>
               </div>
 
               <input
@@ -562,6 +583,9 @@ async function handleSiPdfChange(event: Event) {
 }
 
 const evidenciaInputs = ref<(HTMLInputElement | null)[]>(Array(8).fill(null));
+const selectedEvidenciaIndex = ref<number | null>(null);
+const draggedEvidenciaIndex = ref<number | null>(null);
+const dropTargetEvidenciaIndex = ref<number | null>(null);
 
 const EVIDENCIA_LABELS = [
   'Evidência 1',
@@ -574,7 +598,88 @@ const EVIDENCIA_LABELS = [
   'Evidência 8',
 ];
 
+function evidenciaZoneClass(index: number) {
+  return {
+    'evidencia-zone--selected': selectedEvidenciaIndex.value === index,
+    'evidencia-zone--drop-target': dropTargetEvidenciaIndex.value === index,
+    'evidencia-zone--dragging': draggedEvidenciaIndex.value === index,
+  };
+}
+
+function selectEvidencia(index: number, event?: Event) {
+  selectedEvidenciaIndex.value = index;
+  const target = event?.currentTarget;
+  if (target instanceof HTMLElement) {
+    target.focus();
+  }
+}
+
+function handleEvidenciaDragStart(index: number, event: DragEvent) {
+  if (!evidencias.value[index]) return;
+
+  draggedEvidenciaIndex.value = index;
+  event.dataTransfer?.setData('application/x-evidencia-index', String(index));
+  event.dataTransfer?.setData('text/plain', String(index));
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+}
+
+function handleEvidenciaDragEnd() {
+  draggedEvidenciaIndex.value = null;
+  dropTargetEvidenciaIndex.value = null;
+}
+
+function handleEvidenciaDragOver(index: number, event: DragEvent) {
+  if (draggedEvidenciaIndex.value === null || draggedEvidenciaIndex.value === index) return;
+
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  dropTargetEvidenciaIndex.value = index;
+}
+
+function handleEvidenciaDrop(index: number, event: DragEvent) {
+  event.preventDefault();
+
+  let fromIndex = draggedEvidenciaIndex.value;
+  const fromRaw = event.dataTransfer?.getData('application/x-evidencia-index');
+  if (fromRaw) {
+    const parsed = Number(fromRaw);
+    if (!Number.isNaN(parsed)) {
+      fromIndex = parsed;
+    }
+  }
+
+  if (fromIndex === null || fromIndex === index) {
+    handleEvidenciaDragEnd();
+    return;
+  }
+
+  moveEvidencia(fromIndex, index);
+  handleEvidenciaDragEnd();
+}
+
+function moveEvidencia(fromIndex: number, toIndex: number) {
+  const sourceImage = evidencias.value[fromIndex];
+  if (!sourceImage) return;
+
+  const targetImage = evidencias.value[toIndex];
+  evidencias.value[toIndex] = sourceImage;
+  evidencias.value[fromIndex] = targetImage ?? null;
+  selectedEvidenciaIndex.value = toIndex;
+
+  $q.notify({
+    type: 'positive',
+    message: targetImage
+      ? `Evidências ${fromIndex + 1} e ${toIndex + 1} trocadas.`
+      : `Imagem movida para Evidência ${toIndex + 1}.`,
+  });
+}
+
 function triggerEvidenciaUpload(index: number) {
+  selectEvidencia(index);
   evidenciaInputs.value[index]?.click();
 }
 
@@ -612,6 +717,7 @@ async function handleEvidenciaPaste(event: ClipboardEvent, index: number) {
       event.preventDefault();
       try {
         evidencias.value[index] = await readImageFile(file);
+        selectedEvidenciaIndex.value = index;
         $q.notify({ type: 'positive', message: `Evidência ${index + 1} colada com sucesso.` });
       } catch {
         $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
@@ -621,7 +727,7 @@ async function handleEvidenciaPaste(event: ClipboardEvent, index: number) {
   }
 }
 
-// Listener global: Ctrl+V cola na primeira evidência vazia disponível
+// Listener global: Ctrl+V cola na evidência selecionada ou na primeira vazia
 async function handleGlobalPaste(event: ClipboardEvent) {
   // Só atua se o foco NÃO estiver dentro de uma zona de evidência
   // (essas já têm seu próprio handler)
@@ -634,15 +740,21 @@ async function handleGlobalPaste(event: ClipboardEvent) {
     if (item.type.startsWith('image/')) {
       const file = item.getAsFile();
       if (!file) continue;
-      const emptyIdx = evidencias.value.findIndex((v) => v === null);
-      if (emptyIdx === -1) {
-        $q.notify({ type: 'warning', message: 'Todos os slots de evidência já estão preenchidos.' });
+
+      let targetIdx = selectedEvidenciaIndex.value;
+      if (targetIdx === null) {
+        targetIdx = evidencias.value.findIndex((v) => v === null);
+      }
+      if (targetIdx === -1) {
+        $q.notify({ type: 'warning', message: 'Selecione uma evidência ou libere um slot vazio.' });
         return;
       }
+
       event.preventDefault();
       try {
-        evidencias.value[emptyIdx] = await readImageFile(file);
-        $q.notify({ type: 'positive', message: `Print colado na Evidência ${emptyIdx + 1}.` });
+        evidencias.value[targetIdx] = await readImageFile(file);
+        selectedEvidenciaIndex.value = targetIdx;
+        $q.notify({ type: 'positive', message: `Print colado na Evidência ${targetIdx + 1}.` });
       } catch {
         $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
       }

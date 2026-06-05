@@ -766,22 +766,75 @@ body.body--dark .action-bar {
   &--empty {
     border: 2px dashed var(--border-strong);
     height: 180px;
-    gap: 8px;
+    gap: 6px;
+    cursor: default;
 
-    &:focus, &:focus-within {
-      border-color: var(--q-primary, #2563eb);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    &:focus {
+      outline: none;
     }
   }
 
   &--filled {
     border: 1px solid var(--border);
+    cursor: default;
 
     &:focus {
-      border-color: var(--q-primary, #2563eb);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      outline: none;
     }
   }
+
+  &--selected {
+    border-color: var(--q-primary, #2563eb) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &--drop-target {
+    border-color: var(--q-primary, #2563eb) !important;
+    background: rgba(37, 99, 235, 0.08);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  }
+
+  &--dragging {
+    opacity: 0.55;
+  }
+}
+
+.evidencia-img--draggable {
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.evidencia-zone__upload-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: rgba(37, 99, 235, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--q-primary, #2563eb);
+    outline-offset: 2px;
+  }
+}
+
+.evidencia-zone__paste-hint {
+  opacity: 0.82;
+  user-select: none;
 }
 
 .search-bar {
