@@ -10,6 +10,7 @@ import {
   getTipoCliente,
 } from './desligamento-helpers';
 import { publicAsset } from './assets';
+import { buildDesligamentoExportFileName } from './export-helpers';
 
 const TEMPLATE_URL = publicAsset('template/DESLIGAMENTO.xlsm');
 const SHEET_SINTESE = 'SINTESE';
@@ -35,14 +36,6 @@ function downloadBuffer(buffer: ArrayBuffer, fileName: string) {
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function buildExportFileName(obra: DesligamentoObra) {
-  const referencia = obra.nota || obra.contrato || 'desligamento';
-  return `DESLIGAMENTO_${referencia}_${new Date().toISOString().slice(0, 10)}.xlsx`.replace(
-    /\s+/g,
-    '_',
-  );
 }
 
 function fillSintese(
@@ -172,7 +165,7 @@ export async function exportDesligamentoToExcel(
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const fileName = buildExportFileName(obra);
+  const fileName = buildDesligamentoExportFileName(obra, 'xlsx');
   downloadBuffer(buffer, fileName);
   return fileName;
 }

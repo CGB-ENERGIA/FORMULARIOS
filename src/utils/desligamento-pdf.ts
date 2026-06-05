@@ -7,6 +7,7 @@ import {
   contarPorProtocolar,
 } from './desligamento-helpers';
 import { publicAsset } from './assets';
+import { buildDesligamentoExportFileName } from './export-helpers';
 
 const BANNER_URL = publicAsset('template/banner.png');
 
@@ -273,8 +274,7 @@ export async function exportDesligamentoToPdf(
     },
   });
 
-  const ref = obra.nota || obra.contrato || 'desligamento';
-  const fileName = `DESLIGAMENTO_${ref}_${new Date().toISOString().slice(0, 10)}.pdf`.replace(/\s+/g, '_');
+  const fileName = buildDesligamentoExportFileName(obra, 'pdf');
   doc.save(fileName);
   return fileName;
 }
