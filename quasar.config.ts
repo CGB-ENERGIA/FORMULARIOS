@@ -3,7 +3,7 @@ import { configure } from 'quasar/wrappers';
 const publicPath = process.env.QUASAR_PUBLIC_PATH || '/';
 
 export default configure(() => ({
-  boot: ['pinia'],
+  boot: ['pinia', 'theme'],
   css: ['app.scss'],
   extras: ['roboto-font', 'material-icons'],
   build: {

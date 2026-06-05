@@ -42,6 +42,29 @@ body {
   font-family: var(--app-font);
   color: var(--text-primary);
   background: var(--app-bg);
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease;
+}
+
+body.body--dark {
+  color-scheme: dark;
+  --app-bg: #0b1220;
+  --app-bg-accent:
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.14), transparent 45%),
+    radial-gradient(circle at 100% 20%, rgba(124, 58, 237, 0.12), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(6, 182, 212, 0.08), transparent 50%);
+  --surface: #111827;
+  --surface-muted: #0f172a;
+  --border: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(148, 163, 184, 0.22);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --primary-soft: rgba(96, 165, 250, 0.16);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
 }
 
 .q-field--outlined .q-field__control {
@@ -63,6 +86,14 @@ body {
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease;
+}
+
+body.body--dark .app-header {
+  background: rgba(15, 23, 42, 0.86);
 }
 
 .app-toolbar {
@@ -100,10 +131,54 @@ body {
   background-image: var(--app-bg-accent);
   min-height: calc(100vh - 64px);
   padding: 0;
+  transition:
+    background-color 0.35s ease,
+    background-image 0.35s ease;
 }
 
 .q-page {
   padding: 0 !important;
+}
+
+$drawer-speed: 0.05s;
+$drawer-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+.q-body--layout-animate {
+  .q-drawer__backdrop {
+    transition: background-color $drawer-speed $drawer-ease !important;
+  }
+
+  .q-drawer {
+    transition:
+      transform $drawer-speed $drawer-ease,
+      width $drawer-speed $drawer-ease,
+      top $drawer-speed $drawer-ease,
+      bottom $drawer-speed $drawer-ease !important;
+  }
+
+  .q-layout__section--marginal {
+    transition:
+      transform $drawer-speed $drawer-ease,
+      left $drawer-speed $drawer-ease,
+      right $drawer-speed $drawer-ease !important;
+  }
+
+  .q-page-container {
+    transition:
+      padding-top $drawer-speed $drawer-ease,
+      padding-right $drawer-speed $drawer-ease,
+      padding-bottom $drawer-speed $drawer-ease,
+      padding-left $drawer-speed $drawer-ease !important;
+  }
+
+  .q-page-sticky {
+    transition:
+      transform $drawer-speed $drawer-ease,
+      left $drawer-speed $drawer-ease,
+      right $drawer-speed $drawer-ease,
+      top $drawer-speed $drawer-ease,
+      bottom $drawer-speed $drawer-ease !important;
+  }
 }
 
 .app-drawer {
@@ -112,6 +187,12 @@ body {
   border-right: none !important;
   box-shadow: 20px 0 60px rgba(2, 6, 23, 0.45);
   overflow-x: hidden;
+  transition: transform $drawer-speed $drawer-ease !important;
+  will-change: transform;
+}
+
+.app-layout .q-drawer__backdrop {
+  transition: background-color $drawer-speed ease !important;
 }
 
 .app-drawer .q-drawer__content {
@@ -145,9 +226,13 @@ body {
 .app-drawer__glow {
   position: absolute;
   border-radius: 999px;
-  filter: blur(60px);
+  filter: blur(40px);
   pointer-events: none;
   animation: drawer-glow 8s ease-in-out infinite alternate;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .app-drawer__glow--primary {
@@ -411,6 +496,16 @@ body {
   overflow: hidden;
 }
 
+.app-drawer__theme {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+
+  .theme-toggle__label {
+    color: #94a3b8;
+  }
+}
+
 .app-drawer__footer-card {
   padding: 14px 14px 12px;
   border-radius: 16px;
@@ -453,6 +548,14 @@ body {
 .app-menu-btn:hover {
   transform: scale(1.05);
   background: rgba(37, 99, 235, 0.08) !important;
+}
+
+body.body--dark .app-menu-btn:hover {
+  background: rgba(96, 165, 250, 0.14) !important;
+}
+
+.app-toolbar {
+  gap: 8px;
 }
 
 @keyframes drawer-glow {
@@ -553,6 +656,11 @@ body {
   padding: 20px 24px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  transition: background 0.35s ease;
+}
+
+body.body--dark .premium-card__header {
+  background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
 }
 
 .premium-card__header-title {
@@ -628,6 +736,14 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+body.body--dark .action-bar {
+  background: rgba(17, 24, 39, 0.9);
 }
 
 .action-bar__title {
@@ -648,7 +764,7 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s;
 
   &--empty {
-    border: 2px dashed #bdbdbd;
+    border: 2px dashed var(--border-strong);
     height: 180px;
     gap: 8px;
 
@@ -659,7 +775,7 @@ body {
   }
 
   &--filled {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border);
 
     &:focus {
       border-color: var(--q-primary, #2563eb);
@@ -750,6 +866,12 @@ body {
     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
     font-weight: 700;
     color: var(--text-primary);
+    transition: background 0.35s ease;
+  }
+
+  body.body--dark & .q-table__top,
+  body.body--dark & thead tr:first-child th {
+    background: linear-gradient(180deg, #1e293b 0%, #111827 100%);
   }
 
   thead tr th {
@@ -779,12 +901,25 @@ body {
     background: rgba(248, 250, 252, 0.7);
   }
 
+  body.body--dark & tbody tr:nth-child(even) {
+    background: rgba(15, 23, 42, 0.55);
+  }
+
   tbody tr:nth-child(even):hover {
     background: rgba(37, 99, 235, 0.04);
   }
 
+  body.body--dark & tbody tr:hover {
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  body.body--dark & tbody tr:nth-child(even):hover {
+    background: rgba(37, 99, 235, 0.12);
+  }
+
   .q-field__control {
-    background: #fff;
+    background: var(--surface);
+    transition: background-color 0.35s ease;
   }
 
   .row-index {

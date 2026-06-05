@@ -18,6 +18,8 @@
           <span v-if="pageTitle" class="app-toolbar-title__separator">/</span>
           <span v-if="pageTitle" class="app-toolbar-title__page">{{ pageTitle }}</span>
         </q-toolbar-title>
+
+        <ThemeToggle />
       </q-toolbar>
     </q-header>
 
@@ -26,6 +28,7 @@
       show-if-above
       :width="300"
       :breakpoint="1024"
+      no-mini-animation
       class="app-drawer"
     >
       <div class="app-drawer__shell">
@@ -91,6 +94,10 @@
         </nav>
 
         <footer class="app-drawer__footer">
+          <div class="app-drawer__theme">
+            <ThemeToggle />
+          </div>
+
           <div class="app-drawer__footer-card">
             <div class="app-drawer__status">
               <span class="app-drawer__status-dot" />
@@ -118,6 +125,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
+import ThemeToggle from 'src/components/ThemeToggle.vue';
 import {
   APP_NAME,
   getNavItemKey,
