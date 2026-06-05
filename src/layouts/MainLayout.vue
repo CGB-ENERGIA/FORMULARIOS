@@ -55,8 +55,29 @@
           <div class="app-drawer__section-label">Menu principal</div>
 
           <template v-for="item in navItems" :key="getNavItemKey(item)">
+            <div
+              v-if="isExternalNavItem(item) && item.locked"
+              class="app-drawer__link app-drawer__link--locked"
+              aria-disabled="true"
+              title="Acesso indisponível"
+            >
+              <div class="app-drawer__link-icon">
+                <q-icon :name="item.icon" size="20px" />
+              </div>
+
+              <div class="app-drawer__link-copy">
+                <span class="app-drawer__link-title">
+                  {{ item.title }}
+                  <q-icon name="lock" size="14px" class="app-drawer__link-lock" />
+                </span>
+                <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
+              </div>
+
+              <q-icon name="lock" class="app-drawer__link-arrow" size="16px" />
+            </div>
+
             <a
-              v-if="isExternalNavItem(item)"
+              v-else-if="isExternalNavItem(item)"
               href="#"
               class="app-drawer__link app-drawer__link--external"
               @click.prevent="handleExternalNav(item)"
@@ -152,6 +173,8 @@ function isNavActive(navRoute: string) {
 }
 
 function handleExternalNav(item: NavItem) {
+  if (item.locked) return;
+
   const url = item.externalUrl?.trim();
   if (!url) {
     $q.notify({

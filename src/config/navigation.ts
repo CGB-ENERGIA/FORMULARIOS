@@ -4,6 +4,7 @@ export interface NavItem {
   icon: string;
   route?: string;
   externalUrl?: string;
+  locked?: boolean;
 }
 
 export const APP_NAME = 'Formulários';
@@ -39,9 +40,16 @@ export const navItems: NavItem[] = [
     route: '/desligamento',
   },
   {
+    title: 'ARRASTO',
+    caption: 'Formulário de arrasto',
+    icon: 'swap_horiz',
+    route: '/arrasto',
+  },
+  {
     title: 'EMERGENCIAL',
     caption: 'Acessar outro projeto',
     icon: 'open_in_new',
     externalUrl: EXTERNAL_PROJECT_URL,
+    locked: true,
   },
 ];

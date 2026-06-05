@@ -488,6 +488,24 @@ $drawer-ease: cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
 }
 
+.app-drawer__link--locked {
+  opacity: 0.72;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.015);
+
+  .app-drawer__link-arrow {
+    opacity: 0.55;
+  }
+}
+
+.app-drawer__link-lock {
+  margin-left: 6px;
+  vertical-align: -2px;
+  opacity: 0.9;
+}
+
 .app-drawer__footer {
   position: relative;
   z-index: 1;

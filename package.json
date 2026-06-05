@@ -13,6 +13,7 @@
     "exceljs": "^4.4.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "jszip": "^3.10.1",
     "pdfjs-dist": "^6.0.227",
     "pinia": "^3.0.1",
     "quasar": "^2.18.1",

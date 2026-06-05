@@ -20,6 +20,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/DesligamentoPage.vue'),
         meta: { title: 'DESLIGAMENTO' },
       },
+      {
+        path: 'arrasto',
+        component: () => import('pages/ArrastoPage.vue'),
+        meta: { title: 'ARRASTO' },
+      },
     ],
   },
   {
