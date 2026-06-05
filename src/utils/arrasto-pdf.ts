@@ -5,6 +5,7 @@ import {
   calcularArrastoEmKm,
   calcularPesoEmKg,
   calcularPesoEmT,
+  calcularPesoTotalBruto,
   calcularQtdACobrar,
   calcularTotalLinha,
   calcularValorRs,
@@ -15,10 +16,11 @@ import type { ArrastoMaterial } from './arrasto-types';
 import { publicAsset } from './assets';
 import { buildArrastoExportFileName } from './export-helpers';
 
-const BANNER_URL = publicAsset('template/banner.png');
+const CGB_LOGO_URL = publicAsset('template/cgb-logo.png');
 
 const GRAY: [number, number, number] = [242, 242, 242];
 const LBLUE: [number, number, number] = [220, 230, 241];
+const MAROON: [number, number, number] = [107, 31, 63];
 const RED: [number, number, number] = [192, 0, 0];
 const BLACK: [number, number, number] = [0, 0, 0];
 const WHITE: [number, number, number] = [255, 255, 255];
@@ -36,7 +38,20 @@ const yOff = NEW_Y0 - ORIG_Y0;
 const tx = (x: number) => NEW_X0 + (x - ORIG_X0) * xScale;
 const ty = (y: number) => y + yOff;
 
-const EV_START = ty(205);
+const MATERIAIS_COL_RATIOS = [76, 51, 139, 166, 41, 50, 47, 42, 37];
+const MATERIAIS_COL_HEADERS = [
+  'FAMILIA',
+  'TIPO',
+  'MATERIAL',
+  'DESC_MATERIAL',
+  'UMB',
+  'PESO',
+  'QTD',
+  'TOTAL',
+  'Coluna1',
+] as const;
+
+const EV_START = ty(187);
 const PAGE_BOTTOM = 830;
 const EV_ROWS = 4;
 const EV_H = Math.floor((PAGE_BOTTOM - EV_START) / EV_ROWS);
@@ -52,9 +67,9 @@ interface CellOpts {
   size?: number;
 }
 
-async function loadBannerBase64(): Promise<string> {
-  const res = await fetch(BANNER_URL);
-  if (!res.ok) throw new Error('Banner não encontrado.');
+async function loadCgbLogoBase64(): Promise<string> {
+  const res = await fetch(CGB_LOGO_URL);
+  if (!res.ok) throw new Error('Logo CGB não encontrado.');
   const buf = await res.arrayBuffer();
   const bytes = new Uint8Array(buf);
   let bin = '';
@@ -141,6 +156,138 @@ function formatMoeda(value: number): string {
   return `R$ ${formatNumeroBr(value, 2)}`;
 }
 
+function drawPageHeader(doc: jsPDF, title: string, logo: string, titleSize = 10) {
+  const hTop = ty(83);
+  const hBot = ty(106);
+  const logoW = tx(164) - NEW_X0;
+
+  drawCell(doc, NEW_X0, hTop, tx(164), hBot, {});
+  drawCell(doc, tx(164), hTop, NEW_X1, hBot, {
+    text: title,
+    bold: true,
+    align: 'center',
+    size: titleSize,
+  });
+
+  try {
+    doc.addImage(logo, 'PNG', NEW_X0 + 8, hTop + 4, logoW - 16, hBot - hTop - 8);
+  } catch {
+    /* ignore */
+  }
+
+  return hBot;
+}
+
+function formatPesoTotalKg(value: number): string {
+  return `${formatNumeroBr(value)} Kg`;
+}
+
+function buildMateriaisColumnStyles(tableWidth: number) {
+  const totalRatio = MATERIAIS_COL_RATIOS.reduce((sum, ratio) => sum + ratio, 0);
+  const styles: Record<number, { cellWidth: number; halign?: 'left' | 'center' }> = {};
+
+  MATERIAIS_COL_RATIOS.forEach((ratio, index) => {
+    styles[index] = {
+      cellWidth: (tableWidth * ratio) / totalRatio,
+      ...(index === 3 ? { halign: 'left' as const } : {}),
+    };
+  });
+
+  return styles;
+}
+function drawPesoTotalFooter(doc: DocEx, pesoTotalKg: number, tableEndY: number) {
+  const rowH = 14;
+  const valueW = 60;
+  const labelW = 92;
+  const rowTop = tableEndY + 1;
+  const rowBottom = rowTop + rowH;
+
+  doc.setPage(doc.getNumberOfPages());
+
+  drawCell(doc, NEW_X1 - labelW - valueW, rowTop, NEW_X1 - valueW, rowBottom, {
+    fill: MAROON,
+    text: 'PESO TOTAL',
+    color: WHITE,
+    bold: true,
+    align: 'center',
+    size: 7,
+  });
+  drawCell(doc, NEW_X1 - valueW, rowTop, NEW_X1, rowBottom, {
+    text: formatPesoTotalKg(pesoTotalKg),
+    color: BLACK,
+    align: 'center',
+    size: 7,
+  });
+}
+
+function drawMateriaisArrastadosPage(
+  doc: DocEx,
+  logo: string,
+  quantidades: Record<number, number>,
+  materiais: ArrastoMaterial[],
+  pesoTotalKg: number,
+) {
+  doc.addPage();
+
+  const headerBottom = drawPageHeader(doc, 'MATERIAIS ARRASTADOS', logo, 12);
+  const tableTop = headerBottom + 2;
+  const tableWidth = NEW_X1 - NEW_X0;
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  const materiaisPreenchidos = materiais
+    .map((material) => {
+      const quantidade = quantidades[material.id] ?? 0;
+      if (quantidade <= 0) return null;
+      return {
+        material,
+        quantidade,
+        total: calcularTotalLinha(quantidade, material.peso),
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  autoTable(doc, {
+    startY: tableTop,
+    margin: { left: NEW_X0, right: pageWidth - NEW_X1 },
+    tableWidth,
+    theme: 'grid',
+    styles: {
+      fontSize: 7,
+      cellPadding: 2.5,
+      lineColor: BLACK,
+      lineWidth: 0.4,
+      halign: 'center',
+      valign: 'middle',
+      textColor: RED,
+      font: 'helvetica',
+    },
+    headStyles: {
+      fillColor: MAROON,
+      textColor: WHITE,
+      fontStyle: 'bold',
+      halign: 'center',
+      fontSize: 7,
+      cellPadding: 3,
+    },
+    head: [Array.from(MATERIAIS_COL_HEADERS)],
+    body: materiaisPreenchidos.map(({ material, quantidade, total }) => [
+      material.familia,
+      material.tipo,
+      String(material.id),
+      material.descricao,
+      material.umb,
+      formatNumeroBr(material.peso),
+      String(quantidade),
+      formatNumeroBr(total),
+      '',
+    ]),
+    columnStyles: buildMateriaisColumnStyles(tableWidth),
+  });
+
+  const tableEndY = doc.lastAutoTable?.finalY ?? tableTop;
+  drawPesoTotalFooter(doc, pesoTotalKg, tableEndY);
+}
+
 const L = { color: BLACK as [number, number, number], bold: true } as const;
 const V = { color: RED as [number, number, number] } as const;
 
@@ -153,29 +300,16 @@ export async function exportArrastoToPdf(
   evidencias: (string | null)[],
 ) {
   const pesoEmKg = calcularPesoEmKg(quantidades, materiais);
+  const pesoTotalBruto = calcularPesoTotalBruto(quantidades, materiais);
   const pesoEmT = calcularPesoEmT(pesoEmKg);
   const arrastoEmKm = calcularArrastoEmKm(arrastoEmM);
   const qtdACobrar = calcularQtdACobrar(pesoEmT, arrastoEmKm);
   const valorRs = calcularValorRs(qtdACobrar, precoUnitario);
-  const banner = await loadBannerBase64();
+  const logo = await loadCgbLogoBase64();
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as DocEx;
 
-  const hTop = ty(83);
-  const hBot = ty(106);
-  const logoW = tx(164) - NEW_X0;
-  drawCell(doc, NEW_X0, hTop, tx(164), hBot, {});
-  drawCell(doc, tx(164), hTop, NEW_X1, hBot, {
-    text: 'MEMÓRIA DE CÁLCULO ARRASTO DE MATERIAIS',
-    bold: true,
-    align: 'center',
-    size: 10,
-  });
-  try {
-    doc.addImage(banner, 'PNG', NEW_X0 + 2, hTop + 2, logoW - 4, hBot - hTop - 4);
-  } catch {
-    /* ignore */
-  }
+  drawPageHeader(doc, 'MEMÓRIA DE CÁLCULO ARRASTO DE MATERIAIS', logo, 10);
 
   sectionBar(doc, ty(108), ty(116), 'DADOS OBRA');
 
@@ -183,7 +317,7 @@ export async function exportArrastoToPdf(
   const r1b = ty(127);
   drawCell(doc, tx(58), r1t, tx(91), r1b, { fill: GRAY, text: 'PEP:', ...L, size: 6.5 });
   drawCell(doc, tx(91), r1t, tx(164), r1b, { text: obra.pep, ...V });
-  drawCell(doc, tx(164), r1t, tx(188), r1b, { fill: GRAY, text: 'NOTA:', ...L, size: 6.5 });
+  drawCell(doc, tx(164), r1t, tx(188), r1b, { fill: GRAY, text: 'NOTA', ...L, size: 6.5 });
   drawCell(doc, tx(188), r1t, tx(261), r1b, { text: obra.nota, ...V });
   drawCell(doc, tx(261), r1t, tx(337), r1b, { fill: GRAY, text: 'DISTRITAL:', ...L, size: 6.5 });
   drawCell(doc, tx(337), r1t, tx(451), r1b, {
@@ -191,8 +325,8 @@ export async function exportArrastoToPdf(
     ...V,
     size: 6.5,
   });
-  drawCell(doc, tx(451), r1t, tx(491), r1b, { fill: GRAY, text: 'Reserva:', ...L, size: 6.5 });
-  drawCell(doc, tx(491), r1t, NEW_X1, r1b, { text: obra.reserva, ...V, size: 6.5 });
+  drawCell(doc, tx(451), r1t, tx(478), r1b, { fill: GRAY, text: 'Reserva:', ...L, size: 6.5 });
+  drawCell(doc, tx(478), r1t, NEW_X1, r1b, { text: obra.reserva, ...V, size: 6.5 });
 
   const r2t = ty(127);
   const r2b = ty(135);
@@ -206,22 +340,57 @@ export async function exportArrastoToPdf(
   const r3t = ty(149);
   const r3b = ty(157);
   drawCell(doc, tx(58), r3t, tx(135), r3b, { fill: GRAY, text: 'PESO EM KG', ...L, size: 6.5 });
-  drawCell(doc, tx(135), r3t, tx(210), r3b, { text: formatNumeroBr(pesoEmKg), ...V });
-  drawCell(doc, tx(210), r3t, tx(261), r3b, { fill: GRAY, text: 'PESO EM T', ...L, size: 6.5 });
-  drawCell(doc, tx(261), r3t, tx(337), r3b, { text: formatNumeroBr(pesoEmT), ...V });
-  drawCell(doc, tx(337), r3t, tx(451), r3b, { fill: GRAY, text: 'ARRASTO EM M', ...L, size: 6.5 });
-  drawCell(doc, tx(451), r3t, NEW_X1, r3b, { text: formatNumeroBr(arrastoEmM), ...V });
+  drawCell(doc, tx(135), r3t, tx(261), r3b, { text: formatNumeroBr(pesoEmKg), ...V });
+  drawCell(doc, tx(261), r3t, tx(337), r3b, { fill: GRAY, text: 'ARRASTO EM M', ...L, size: 6.5 });
+  drawCell(doc, tx(337), r3t, NEW_X1, r3b, { text: formatNumeroBr(arrastoEmM), ...V });
 
   const r4t = ty(157);
   const r4b = ty(165);
-  drawCell(doc, tx(58), r4t, tx(135), r4b, { fill: GRAY, text: 'ARRASTO EM KM', ...L, size: 6.5 });
-  drawCell(doc, tx(135), r4t, tx(210), r4b, { text: formatNumeroBr(arrastoEmKm), ...V });
-  drawCell(doc, tx(210), r4t, tx(261), r4b, { fill: GRAY, text: 'PREÇO UNIT', ...L, size: 6.5 });
-  drawCell(doc, tx(261), r4t, tx(337), r4b, { text: formatMoeda(precoUnitario), ...V });
-  drawCell(doc, tx(337), r4t, tx(451), r4b, { fill: GRAY, text: 'QTD A COBRAR', ...L, size: 6.5 });
-  drawCell(doc, tx(451), r4t, tx(491), r4b, { text: formatNumeroBr(qtdACobrar), ...V });
-  drawCell(doc, tx(491), r4t, tx(521), r4b, { fill: GRAY, text: 'VALOR R$', ...L, size: 6.5 });
-  drawCell(doc, tx(521), r4t, NEW_X1, r4b, {
+  drawCell(doc, tx(58), r4t, tx(135), r4b, { fill: GRAY, text: 'PESO EM T', ...L, size: 6.5 });
+  drawCell(doc, tx(135), r4t, tx(261), r4b, { text: formatNumeroBr(pesoEmT), ...V });
+  drawCell(doc, tx(261), r4t, tx(337), r4b, { fill: GRAY, text: 'ARRASTO EM KM', ...L, size: 6.5 });
+  drawCell(doc, tx(337), r4t, NEW_X1, r4b, { text: formatNumeroBr(arrastoEmKm), ...V });
+
+  const pairWidth = (NEW_X1 - NEW_X0) / 3;
+  const labelShare = 0.42;
+
+  const r5t = ty(165);
+  const r5b = ty(173);
+  const precoX0 = NEW_X0;
+  const precoX1 = NEW_X0 + pairWidth;
+  const qtdX0 = precoX1;
+  const qtdX1 = qtdX0 + pairWidth;
+  const valorX0 = qtdX1;
+  const valorX1 = NEW_X1;
+
+  drawCell(doc, precoX0, r5t, precoX0 + pairWidth * labelShare, r5b, {
+    fill: GRAY,
+    text: 'PREÇO UNIT',
+    ...L,
+    size: 6.5,
+  });
+  drawCell(doc, precoX0 + pairWidth * labelShare, r5t, precoX1, r5b, {
+    text: formatMoeda(precoUnitario),
+    ...V,
+    size: 6.5,
+  });
+  drawCell(doc, qtdX0, r5t, qtdX0 + pairWidth * labelShare, r5b, {
+    fill: GRAY,
+    text: 'QTD A COBRAR',
+    ...L,
+    size: 6.5,
+  });
+  drawCell(doc, qtdX0 + pairWidth * labelShare, r5t, qtdX1, r5b, {
+    text: formatNumeroBr(qtdACobrar),
+    ...V,
+  });
+  drawCell(doc, valorX0, r5t, valorX0 + pairWidth * labelShare, r5b, {
+    fill: GRAY,
+    text: 'VALOR R$',
+    ...L,
+    size: 6.5,
+  });
+  drawCell(doc, valorX0 + pairWidth * labelShare, r5t, valorX1, r5b, {
     fill: LBLUE,
     text: valorRs > 0 ? formatMoeda(valorRs) : 'R$ -',
     align: 'center',
@@ -230,7 +399,7 @@ export async function exportArrastoToPdf(
     size: 7,
   });
 
-  sectionBar(doc, ty(168), ty(176), 'EVIDENCIAS');
+  sectionBar(doc, ty(176), ty(184), 'EVIDENCIAS');
 
   const lblL_X0 = NEW_X0;
   const lblL_X1 = tx(91);
@@ -265,58 +434,7 @@ export async function exportArrastoToPdf(
     drawEvidImg(doc, evidencias[idxR], imgR_X0, y0, NEW_X1, y1);
   }
 
-  const materiaisPreenchidos = materiais
-    .map((material) => {
-      const quantidade = quantidades[material.id] ?? 0;
-      if (quantidade <= 0) return null;
-      return {
-        material,
-        quantidade,
-        total: calcularTotalLinha(quantidade, material.peso),
-      };
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null);
-
-  if (materiaisPreenchidos.length > 0) {
-    doc.addPage();
-    autoTable(doc, {
-      startY: 40,
-      margin: { left: 40, right: 40 },
-      theme: 'grid',
-      styles: {
-        fontSize: 7.5,
-        cellPadding: 3,
-        lineColor: BLACK,
-        lineWidth: 0.4,
-        halign: 'center',
-        valign: 'middle',
-      },
-      headStyles: {
-        fillColor: [107, 31, 63],
-        textColor: WHITE,
-        fontStyle: 'bold',
-        halign: 'center',
-        fontSize: 7.5,
-      },
-      head: [['MATERIAL', 'DESCRIÇÃO', 'FAMÍLIA', 'TIPO', 'QTD', 'PESO', 'TOTAL']],
-      body: materiaisPreenchidos.map(({ material, quantidade, total }) => [
-        String(material.id),
-        material.descricao,
-        material.familia,
-        material.tipo,
-        String(quantidade),
-        formatNumeroBr(material.peso),
-        formatNumeroBr(total),
-      ]),
-      columnStyles: {
-        0: { cellWidth: 52 },
-        1: { halign: 'left' },
-        4: { cellWidth: 32 },
-        5: { cellWidth: 38 },
-        6: { cellWidth: 42 },
-      },
-    });
-  }
+  drawMateriaisArrastadosPage(doc, logo, quantidades, materiais, pesoTotalBruto);
 
   const fileName = buildArrastoExportFileName(obra, 'pdf');
   doc.save(fileName);
