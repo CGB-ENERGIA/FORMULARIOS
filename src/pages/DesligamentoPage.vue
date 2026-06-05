@@ -26,38 +26,66 @@
         <q-card-section class="premium-card__body field-grid">
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.nota" label="Nota" outlined dense hide-bottom-space />
+              <q-input
+                v-model="obra.nota"
+                label="Nota *"
+                outlined
+                dense
+                hide-bottom-space
+                :error="obraFieldHasError('nota')"
+                :error-message="obraFieldError('nota') ?? undefined"
+              />
             </div>
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.contrato" label="Contrato" outlined dense hide-bottom-space readonly />
+              <q-input v-model="obra.contrato" label="Contrato *" outlined dense hide-bottom-space readonly />
             </div>
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.pep" label="PEP" outlined dense hide-bottom-space />
+              <q-input
+                v-model="obra.pep"
+                label="PEP *"
+                outlined
+                dense
+                hide-bottom-space
+                :error="obraFieldHasError('pep')"
+                :error-message="obraFieldError('pep') ?? undefined"
+              />
             </div>
             <div class="col-12 col-md-6">
-              <q-input v-model="obra.fornecedor" label="Fornecedor" outlined dense hide-bottom-space readonly />
+              <q-input v-model="obra.fornecedor" label="Fornecedor *" outlined dense hide-bottom-space readonly />
             </div>
             <div class="col-12 col-md-6">
-              <q-input v-model="obra.cidade" label="Cidade" outlined dense hide-bottom-space />
+              <q-input
+                v-model="obra.cidade"
+                label="Cidade *"
+                outlined
+                dense
+                hide-bottom-space
+                :error="obraFieldHasError('cidade')"
+                :error-message="obraFieldError('cidade') ?? undefined"
+              />
             </div>
             <div class="col-12">
               <q-input
                 v-model="obra.descricaoObra"
-                label="Descrição da Obra"
+                label="Descrição da Obra *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="obraFieldHasError('descricaoObra')"
+                :error-message="obraFieldError('descricaoObra') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-4">
               <q-input
                 v-model="obra.data"
-                label="Data"
+                label="Data *"
                 outlined
                 dense
                 mask="##/##/####"
                 placeholder="DD/MM/AAAA"
                 hide-bottom-space
+                :error="obraFieldHasError('data')"
+                :error-message="obraFieldError('data') ?? undefined"
               >
                 <template #append>
                   <q-icon name="event" class="cursor-pointer">
@@ -76,11 +104,13 @@
               <div class="row q-gutter-sm no-wrap items-center">
                 <q-input
                   v-model="obra.siMes"
-                  label="Solicitação de Intervenção (SI) / Mês"
+                  label="Solicitação de Intervenção (SI) / Mês *"
                   outlined
                   dense
                   hide-bottom-space
                   class="col"
+                  :error="obraFieldHasError('siMes')"
+                  :error-message="obraFieldError('siMes') ?? undefined"
                 />
                 <q-btn
                   icon="picture_as_pdf"
@@ -132,41 +162,49 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="solicitacao.inicioDesligamento"
-                label="Início Desligamento"
+                label="Início Desligamento *"
                 outlined
                 dense
                 mask="##/##/#### ##:##"
                 placeholder="DD/MM/AAAA HH:MM"
                 hide-bottom-space
+                :error="siFieldHasError('inicioDesligamento')"
+                :error-message="siFieldError('inicioDesligamento') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
               <q-input
                 v-model="solicitacao.fimDesligamento"
-                label="Fim Desligamento"
+                label="Fim Desligamento *"
                 outlined
                 dense
                 mask="##/##/#### ##:##"
                 placeholder="DD/MM/AAAA HH:MM"
                 hide-bottom-space
+                :error="siFieldHasError('fimDesligamento')"
+                :error-message="siFieldError('fimDesligamento') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
               <q-input
                 v-model="solicitacao.numeroOperacional"
-                label="Nº Operacional"
+                label="Nº Operacional *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="siFieldHasError('numeroOperacional')"
+                :error-message="siFieldError('numeroOperacional') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
               <q-input
                 v-model="solicitacao.numeroBarramento"
-                label="Nº Barramento"
+                label="Nº Barramento *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="siFieldHasError('numeroBarramento')"
+                :error-message="siFieldError('numeroBarramento') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
@@ -452,9 +490,12 @@ import type { QTableColumn } from 'quasar';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useDesligamentoStore } from 'src/stores/desligamento';
 import { parseSiMesFromPdf, parseConsumidoresFromPdf, parseDatesFromPdf } from 'src/utils/parse-si-pdf';
+import type { DesligamentoObra, DesligamentoSI } from 'src/stores/desligamento';
 import {
   consumidorDesligamentoComDados,
   contarPorProtocolar,
+  getDesligamentoObraFieldError,
+  getDesligamentoSIFieldError,
   validateDesligamentoParaExportacao,
 } from 'src/utils/desligamento-helpers';
 import { exportDesligamentoToExcel } from 'src/utils/desligamento-excel';
@@ -467,6 +508,7 @@ const { addConsumidor, removeConsumidor, resetForm } = store;
 
 const siPdfInput = ref<HTMLInputElement | null>(null);
 const siDate = ref('');
+const desligamentoValidacaoAtiva = ref(false);
 
 function handleSiDateChange(val: string) {
   // QDate retorna YYYY/MM/DD — extraímos só o mês
@@ -639,18 +681,50 @@ const preenchidosCount = computed(
 const qtdSemProtocolo = computed(() => contarPorProtocolar(consumidores.value, 'NAO'));
 const qtdComProtocolo = computed(() => contarPorProtocolar(consumidores.value, 'SIM'));
 
-async function handleExport() {
-  const errors = validateDesligamentoParaExportacao(consumidores.value);
+function obraFieldError(field: keyof DesligamentoObra) {
+  if (!desligamentoValidacaoAtiva.value) return null;
+  return getDesligamentoObraFieldError(obra.value, field);
+}
+
+function obraFieldHasError(field: keyof DesligamentoObra) {
+  return Boolean(obraFieldError(field));
+}
+
+function siFieldError(field: keyof DesligamentoSI) {
+  if (!desligamentoValidacaoAtiva.value) return null;
+  return getDesligamentoSIFieldError(solicitacao.value, field);
+}
+
+function siFieldHasError(field: keyof DesligamentoSI) {
+  return Boolean(siFieldError(field));
+}
+
+function notifyExportValidationErrors(errors: string[]) {
+  $q.notify({
+    type: 'negative',
+    message: 'Não foi possível exportar. Corrija os campos:',
+    caption: errors.join(' · '),
+    multiLine: errors.length > 1,
+    timeout: 8000,
+  });
+}
+
+function ensureExportavel(): boolean {
+  desligamentoValidacaoAtiva.value = true;
+  const errors = validateDesligamentoParaExportacao(
+    obra.value,
+    solicitacao.value,
+    consumidores.value,
+  );
   if (errors.length > 0) {
-    $q.notify({
-      type: 'negative',
-      message: 'Não foi possível exportar.',
-      caption: errors.join(' · '),
-      multiLine: errors.length > 1,
-      timeout: 8000,
-    });
-    return;
+    notifyExportValidationErrors(errors);
+    return false;
   }
+  return true;
+}
+
+async function handleExport() {
+  if (!ensureExportavel()) return;
 
   try {
     const fileName = await exportDesligamentoToExcel(
@@ -673,6 +747,8 @@ async function handleExport() {
 }
 
 async function handleExportPdf() {
+  if (!ensureExportavel()) return;
+
   try {
     const fileName = await exportDesligamentoToPdf(
       obra.value,
@@ -698,6 +774,7 @@ function handleReset() {
     persistent: true,
   }).onOk(() => {
     resetForm();
+    desligamentoValidacaoAtiva.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });
 }

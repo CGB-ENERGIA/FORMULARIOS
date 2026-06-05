@@ -111,10 +111,12 @@ body {
   color: #e2e8f0;
   border-right: none !important;
   box-shadow: 20px 0 60px rgba(2, 6, 23, 0.45);
+  overflow-x: hidden;
 }
 
 .app-drawer .q-drawer__content {
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 .app-drawer__shell {
@@ -122,8 +124,11 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 22px 18px 18px;
+  width: 100%;
+  min-width: 0;
+  padding: 22px 16px 18px;
   isolation: isolate;
+  overflow: hidden;
 }
 
 .app-drawer__grid {
@@ -167,8 +172,10 @@ body {
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 6px 18px;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 4px 18px;
+  overflow: hidden;
 }
 
 .app-drawer__logo {
@@ -190,7 +197,7 @@ body {
 }
 
 .app-drawer__brand-title {
-  font-size: 1.28rem;
+  font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -198,6 +205,9 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-drawer__brand-caption {
@@ -209,6 +219,7 @@ body {
 }
 
 .app-drawer__brand-chip {
+  flex-shrink: 0;
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 0.68rem;
@@ -241,8 +252,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 2px;
+  min-width: 0;
+  padding: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .app-drawer__section-label {
@@ -258,8 +272,11 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 12px;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 12px 10px;
   border-radius: 16px;
   text-decoration: none;
   color: #cbd5e1;
@@ -267,7 +284,6 @@ body {
   background: rgba(255, 255, 255, 0.02);
   overflow: hidden;
   transition:
-    transform var(--transition),
     border-color var(--transition),
     background-color var(--transition),
     box-shadow var(--transition),
@@ -284,7 +300,6 @@ body {
 }
 
 .app-drawer__link:hover {
-  transform: translateX(4px);
   color: #ffffff;
   border-color: rgba(96, 165, 250, 0.22);
   background: rgba(255, 255, 255, 0.05);
@@ -297,7 +312,6 @@ body {
 
 .app-drawer__link:hover .app-drawer__link-arrow {
   opacity: 1;
-  transform: translate(2px, -2px);
 }
 
 .app-drawer__link--active {
@@ -329,8 +343,9 @@ body {
 }
 
 .app-drawer__link-icon {
-  width: 42px;
-  height: 42px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   display: grid;
   place-items: center;
@@ -357,15 +372,21 @@ body {
 }
 
 .app-drawer__link-title {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-drawer__link-caption {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: #94a3b8;
   line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-drawer__link--active .app-drawer__link-caption {
@@ -373,10 +394,9 @@ body {
 }
 
 .app-drawer__link-arrow {
+  flex-shrink: 0;
   opacity: 0.35;
-  transition:
-    opacity var(--transition),
-    transform var(--transition);
+  transition: opacity var(--transition);
 }
 
 .app-drawer__link--active .app-drawer__link-arrow {
@@ -386,7 +406,9 @@ body {
 .app-drawer__footer {
   position: relative;
   z-index: 1;
+  min-width: 0;
   padding-top: 16px;
+  overflow: hidden;
 }
 
 .app-drawer__footer-card {
@@ -419,6 +441,9 @@ body {
   margin-top: 6px;
   font-size: 0.72rem;
   color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-menu-btn {

@@ -80,11 +80,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { APP_NAME, navItems } from 'src/config/navigation';
+import { APP_NAME, isExternalNavItem, navItems } from 'src/config/navigation';
 
 const router = useRouter();
 
-const formCards = computed(() => navItems.filter((item) => item.route !== '/'));
+const formCards = computed(() =>
+  navItems.filter((item) => item.route && item.route !== '/' && !isExternalNavItem(item)),
+);
 
 function goTo(route: string) {
   void router.push(route);

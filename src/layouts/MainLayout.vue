@@ -51,24 +51,43 @@
         <nav class="app-drawer__nav">
           <div class="app-drawer__section-label">Menu principal</div>
 
-          <router-link
-            v-for="item in navItems"
-            :key="item.route"
-            :to="item.route"
-            class="app-drawer__link"
-            :class="{ 'app-drawer__link--active': isNavActive(item.route) }"
-          >
-            <div class="app-drawer__link-icon">
-              <q-icon :name="item.icon" size="20px" />
-            </div>
+          <template v-for="item in navItems" :key="getNavItemKey(item)">
+            <a
+              v-if="isExternalNavItem(item)"
+              href="#"
+              class="app-drawer__link app-drawer__link--external"
+              @click.prevent="handleExternalNav(item)"
+            >
+              <div class="app-drawer__link-icon">
+                <q-icon :name="item.icon" size="20px" />
+              </div>
 
-            <div class="app-drawer__link-copy">
-              <span class="app-drawer__link-title">{{ item.title }}</span>
-              <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
-            </div>
+              <div class="app-drawer__link-copy">
+                <span class="app-drawer__link-title">{{ item.title }}</span>
+                <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
+              </div>
 
-            <q-icon name="north_east" class="app-drawer__link-arrow" size="16px" />
-          </router-link>
+              <q-icon name="north_east" class="app-drawer__link-arrow" size="16px" />
+            </a>
+
+            <router-link
+              v-else
+              :to="item.route!"
+              class="app-drawer__link"
+              :class="{ 'app-drawer__link--active': isNavActive(item.route!) }"
+            >
+              <div class="app-drawer__link-icon">
+                <q-icon :name="item.icon" size="20px" />
+              </div>
+
+              <div class="app-drawer__link-copy">
+                <span class="app-drawer__link-title">{{ item.title }}</span>
+                <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
+              </div>
+
+              <q-icon name="north_east" class="app-drawer__link-arrow" size="16px" />
+            </router-link>
+          </template>
         </nav>
 
         <footer class="app-drawer__footer">
@@ -98,8 +117,16 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { APP_NAME, navItems } from 'src/config/navigation';
+import { useQuasar } from 'quasar';
+import {
+  APP_NAME,
+  getNavItemKey,
+  isExternalNavItem,
+  navItems,
+  type NavItem,
+} from 'src/config/navigation';
 
+const $q = useQuasar();
 const route = useRoute();
 const menuBtnRef = ref<{ $el: HTMLElement } | null>(null);
 const leftDrawerOpen = ref(false);
@@ -114,6 +141,20 @@ const pageTitle = computed(() => {
 function isNavActive(navRoute: string) {
   if (navRoute === '/') return route.path === '/';
   return route.path === navRoute || route.path.startsWith(`${navRoute}/`);
+}
+
+function handleExternalNav(item: NavItem) {
+  const url = item.externalUrl?.trim();
+  if (!url) {
+    $q.notify({
+      type: 'info',
+      message: 'Link do projeto externo em breve.',
+    });
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
+  closeDrawer();
 }
 
 function isClickInsideMenuButton(target: EventTarget | null) {

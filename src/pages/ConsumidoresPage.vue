@@ -28,16 +28,18 @@
             <div class="col-12">
               <q-input
                 v-model="obra.descricaoObra"
-                label="Descrição da Obra"
+                label="Descrição da Obra *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="obraFieldHasError('descricaoObra')"
+                :error-message="obraFieldError('descricaoObra') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
               <q-input
                 :model-value="FORNECEDOR_FIXO"
-                label="Fornecedor"
+                label="Fornecedor *"
                 outlined
                 dense
                 readonly
@@ -48,21 +50,25 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="obra.elementoPep"
-                label="Elemento PEP"
+                label="Elemento PEP *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="obraFieldHasError('elementoPep')"
+                :error-message="obraFieldError('elementoPep') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
               <q-input
                 :model-value="obra.dataConclusao"
-                label="Data da Conclusão"
+                label="Data da Conclusão *"
                 outlined
                 dense
                 mask="##/##/####"
                 placeholder="DD/MM/AAAA"
                 hide-bottom-space
+                :error="obraFieldHasError('dataConclusao')"
+                :error-message="obraFieldError('dataConclusao') ?? undefined"
                 @update:model-value="onDataObraChange"
               >
                 <template #append>
@@ -85,12 +91,14 @@
             <div class="col-12 col-md-6">
               <q-input
                 :model-value="obra.dataEnergizacao"
-                label="Data da Energização"
+                label="Data da Energização *"
                 outlined
                 dense
                 mask="##/##/####"
                 placeholder="DD/MM/AAAA"
                 hide-bottom-space
+                :error="obraFieldHasError('dataEnergizacao')"
+                :error-message="obraFieldError('dataEnergizacao') ?? undefined"
                 @update:model-value="onDataObraChange"
               >
                 <template #append>
@@ -113,7 +121,7 @@
             <div class="col-12 col-md-6">
               <q-input
                 :model-value="TEC_OBRA_FIXO"
-                label="Téc da Obra"
+                label="Téc da Obra *"
                 outlined
                 dense
                 readonly
@@ -124,7 +132,7 @@
             <div class="col-12 col-md-6">
               <q-input
                 :model-value="REGIONAL_FIXA"
-                label="Regional"
+                label="Regional *"
                 outlined
                 dense
                 readonly
@@ -135,19 +143,23 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="obra.localidade"
-                label="Localidade"
+                label="Localidade *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="obraFieldHasError('localidade')"
+                :error-message="obraFieldError('localidade') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
               <q-input
                 v-model="obra.municipio"
-                label="Município"
+                label="Município *"
                 outlined
                 dense
                 hide-bottom-space
+                :error="obraFieldHasError('municipio')"
+                :error-message="obraFieldError('municipio') ?? undefined"
               />
             </div>
           </div>
@@ -255,6 +267,7 @@
                     hide-bottom-space
                     :error="Boolean(medidorFieldError(props.row))"
                     :error-message="medidorFieldError(props.row) ?? undefined"
+                    @update:model-value="onNumeroMedidorChange(props.row)"
                   />
                 </q-td>
 
@@ -310,19 +323,23 @@
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useConsumidoresStore, FORNECEDOR_FIXO, REGIONAL_FIXA, TEC_OBRA_FIXO } from 'src/stores/consumidores';
+import type { ObraInfo } from 'src/stores/consumidores';
 import { consumidorPreenchido, exportToExcel } from 'src/utils/excel';
 import { exportToPdf } from 'src/utils/pdf';
 import {
+  applyTipoLigacaoFromMedidor,
   getMedidorFieldError,
   validateConsumidoresParaExportacao,
 } from 'src/utils/consumidor-helpers';
+import { getObraFieldError, validateObraParaExportacao } from 'src/utils/obra-helpers';
 
 const $q = useQuasar();
 const store = useConsumidoresStore();
 const { obra, consumidores } = storeToRefs(store);
 const { addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor } = store;
+const obraValidacaoAtiva = ref(false);
 
 const preenchidosCount = computed(
   () => consumidores.value.filter(consumidorPreenchido).length,
@@ -338,6 +355,19 @@ watch(
 
 function medidorFieldError(consumidor: (typeof consumidores.value)[number]) {
   return getMedidorFieldError(consumidor);
+}
+
+function onNumeroMedidorChange(consumidor: (typeof consumidores.value)[number]) {
+  applyTipoLigacaoFromMedidor(consumidor);
+}
+
+function obraFieldError(field: keyof ObraInfo) {
+  if (!obraValidacaoAtiva.value) return null;
+  return getObraFieldError(obra.value, field);
+}
+
+function obraFieldHasError(field: keyof ObraInfo) {
+  return Boolean(obraFieldError(field));
 }
 
 function onDataObraChange(value: string | number | null) {
@@ -361,7 +391,7 @@ const columns: QTableColumn[] = [{ name: 'id', label: 'Nº', field: 'id' }];
 function notifyExportValidationErrors(errors: string[]) {
   $q.notify({
     type: 'negative',
-    message: 'Não foi possível exportar. Corrija os medidores:',
+    message: 'Não foi possível exportar. Corrija os campos:',
     caption: errors.join(' · '),
     multiLine: errors.length > 1,
     timeout: 8000,
@@ -369,7 +399,11 @@ function notifyExportValidationErrors(errors: string[]) {
 }
 
 function ensureExportavel(): boolean {
-  const errors = validateConsumidoresParaExportacao(consumidores.value);
+  obraValidacaoAtiva.value = true;
+  const errors = [
+    ...validateObraParaExportacao(obra.value),
+    ...validateConsumidoresParaExportacao(consumidores.value),
+  ];
   if (errors.length > 0) {
     notifyExportValidationErrors(errors);
     return false;
@@ -429,6 +463,7 @@ function handleReset() {
     persistent: true,
   }).onOk(() => {
     resetForm();
+    obraValidacaoAtiva.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });
 }

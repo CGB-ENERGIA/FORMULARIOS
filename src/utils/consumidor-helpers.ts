@@ -25,6 +25,20 @@ const MEDIDOR_PREFIX: Partial<Record<Consumidor['tipoLigacao'], string>> = {
   TRI: '3',
 };
 
+export function inferTipoLigacaoFromMedidor(numeroMedidor: string): 'MO' | 'TRI' | null {
+  const first = numeroMedidor.trim().charAt(0);
+  if (first === '1') return 'MO';
+  if (first === '3') return 'TRI';
+  return null;
+}
+
+export function applyTipoLigacaoFromMedidor(consumidor: Consumidor): void {
+  const inferred = inferTipoLigacaoFromMedidor(consumidor.numeroMedidor);
+  if (inferred) {
+    consumidor.tipoLigacao = inferred;
+  }
+}
+
 export function validateMedidorPorTipoLigacao(consumidor: Consumidor): string | null {
   const prefix = MEDIDOR_PREFIX[consumidor.tipoLigacao];
   if (!prefix) return null;
