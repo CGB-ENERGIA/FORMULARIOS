@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import type { DistritalCode } from 'src/utils/historico-file';
 
 export type ProtocolarOpcao = 'SIM' | 'NAO' | '';
 
@@ -71,6 +72,9 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
   // 8 slots de evidência (base64 data-URL ou null)
   const evidencias = ref<(string | null)[]>(Array(8).fill(null));
 
+  // Distrital selecionada
+  const distrital = ref<DistritalCode | ''>('');
+
   function addConsumidor() {
     consumidores.value.push(createEmptyConsumidor(consumidores.value.length + 1));
   }
@@ -83,7 +87,8 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
     });
   }
 
-  function resetForm() {
+  function resetForm(keepDistrital = true) {
+    if (!keepDistrital) distrital.value = '';
     obra.value = {
       nota: '',
       contrato: '4600026661',
@@ -112,6 +117,7 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
     solicitacao,
     consumidores,
     evidencias,
+    distrital,
     addConsumidor,
     removeConsumidor,
     resetForm,

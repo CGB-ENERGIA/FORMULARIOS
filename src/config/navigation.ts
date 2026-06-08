@@ -46,6 +46,12 @@ export const navItems: NavItem[] = [
     route: '/arrasto',
   },
   {
+    title: 'HISTÓRICO',
+    caption: 'Registros por distrital',
+    icon: 'history',
+    route: '/historico',
+  },
+  {
     title: 'EMERGENCIAL',
     caption: 'Acessar outro projeto',
     icon: 'open_in_new',
