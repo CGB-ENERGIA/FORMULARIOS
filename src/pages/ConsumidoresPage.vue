@@ -20,7 +20,7 @@
             <q-icon name="history" size="28px" color="primary" />
           </div>
           <div class="historico-banner__text">
-            <div class="historico-banner__title">Histórico de Desligamentos</div>
+            <div class="historico-banner__title">Histórico de Consumidores</div>
             <div class="historico-banner__subtitle">Consulte os registros salvos por distrital (BCB, BDC, ITM, PDS, PDT, STI)</div>
           </div>
           <q-icon name="chevron_right" size="24px" color="grey-5" class="q-ml-auto" />
