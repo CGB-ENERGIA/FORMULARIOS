@@ -194,23 +194,28 @@ async function readDistritalFile(
 /**
  * Salva uma entrada no histórico.
  * Sempre grava no IndexedDB (silencioso).
- * Tenta também gravar no arquivo em Documentos.
+ * Se o handle da pasta já estiver configurado, grava também no arquivo — sem abrir diálogo.
+ * NÃO chama showDirectoryPicker aqui (precisa ser feito via botão direto do usuário).
  */
 export async function appendHistoricoEntry(entry: HistoricoEntry): Promise<void> {
   // 1. IndexedDB — sempre, sem falha
   await idbPutEntry(entry);
 
-  // 2. Arquivo em Documentos — tenta obter o handle
+  // 2. Arquivo — apenas se o handle já existir e tiver permissão (sem diálogo)
   try {
-    const dir = await getDirHandle();
-    const existing = await readDistritalFile(dir, entry.distrital);
-    // Substitui se já existe entrada com mesmo id, senão acrescenta
+    const saved = _dirHandle ?? (await idbLoadHandle());
+    if (!saved) return; // pasta não configurada ainda — tudo bem, IndexedDB tem os dados
+
+    const opts = { mode: 'readwrite' } as FileSystemHandlePermissionDescriptor;
+    const perm = await saved.queryPermission(opts);
+    if (perm !== 'granted') return; // permissão expirou — silencioso, sem pedir
+
+    _dirHandle = saved;
+    const existing = await readDistritalFile(saved, entry.distrital);
     const updated = [...existing.filter((e) => e.id !== entry.id), entry];
-    await writeDistritalFile(dir, entry.distrital, updated);
+    await writeDistritalFile(saved, entry.distrital, updated);
   } catch (err) {
-    // Se o usuário cancelou o seletor ou negou permissão, apenas ignora
-    if (err instanceof DOMException && err.name === 'AbortError') return;
-    console.warn('Histórico salvo no IndexedDB, mas falhou ao gravar o arquivo:', err);
+    console.warn('Falhou ao gravar arquivo (IndexedDB preservado):', err);
   }
 }
 
@@ -221,7 +226,7 @@ export async function loadHistoricoEntries(
   return idbGetEntries(distrital);
 }
 
-/** Remove um registro do IndexedDB e do arquivo em Documentos. */
+/** Remove um registro do IndexedDB e do arquivo (se o handle existir). */
 export async function deleteHistoricoEntry(
   distrital: DistritalCode,
   id: string,
@@ -229,12 +234,36 @@ export async function deleteHistoricoEntry(
   await idbDeleteEntry(distrital, id);
 
   try {
-    const dir = await getDirHandle();
-    const entries = await readDistritalFile(dir, distrital);
-    await writeDistritalFile(dir, distrital, entries.filter((e) => e.id !== id));
+    const saved = _dirHandle ?? (await idbLoadHandle());
+    if (!saved) return;
+    const opts = { mode: 'readwrite' } as FileSystemHandlePermissionDescriptor;
+    if ((await saved.queryPermission(opts)) !== 'granted') return;
+    const entries = await readDistritalFile(saved, distrital);
+    await writeDistritalFile(saved, distrital, entries.filter((e) => e.id !== id));
   } catch {
     // silencioso
   }
+}
+
+/**
+ * Abre o seletor de pasta para configurar onde salvar os arquivos.
+ * DEVE ser chamado diretamente de um evento de clique do usuário.
+ */
+export async function configurarPastaHistorico(): Promise<string> {
+  const handle = await window.showDirectoryPicker({
+    mode: 'readwrite',
+    startIn: 'desktop',
+  });
+  await idbSaveHandle(handle);
+  _dirHandle = handle;
+  return handle.name; // retorna o nome da pasta escolhida
+}
+
+/** Verifica se uma pasta já foi configurada (sem abrir diálogo). */
+export async function isPastaConfigurada(): Promise<boolean> {
+  if (_dirHandle) return true;
+  const saved = await idbLoadHandle();
+  return saved !== null;
 }
 
 /** Exporta o histórico da distrital como download de arquivo JSON (backup manual). */
