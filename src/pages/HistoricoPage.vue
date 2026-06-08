@@ -3,6 +3,15 @@
     <div class="page-shell__inner">
       <header class="page-header">
         <div class="page-header__eyebrow">
+          <q-btn
+            flat dense no-caps
+            icon="arrow_back"
+            label="Voltar"
+            color="primary"
+            size="sm"
+            class="q-mr-sm"
+            @click="$router.back()"
+          />
           <q-icon name="history" size="14px" />
           Registros salvos
         </div>
