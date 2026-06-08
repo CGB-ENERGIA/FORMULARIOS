@@ -21,109 +21,61 @@
         </p>
       </header>
 
-      <!-- Seletor de distrital -->
-      <q-card flat class="premium-card q-mb-md">
-        <div class="premium-card__header">
-          <div class="premium-card__header-title">
-            <div class="premium-card__header-icon">
-              <q-icon name="location_city" size="22px" />
+      <!-- ───── VISUALIZADOR DE JSON IMPORTADO ───── -->
+      <template v-if="importedEntries !== null">
+        <q-card flat class="premium-card q-mb-md import-banner">
+          <q-card-section class="import-banner__body">
+            <div class="import-banner__info">
+              <q-icon name="folder_open" size="20px" color="primary" />
+              <div>
+                <div class="import-banner__title">Visualizando: <strong>{{ importedFileName }}</strong></div>
+                <div class="import-banner__sub">{{ importedEntries.length }} registro(s) — somente leitura, nada foi alterado no histórico salvo</div>
+              </div>
             </div>
-            Distrital
-          </div>
-        </div>
-        <q-card-section class="premium-card__body">
-          <div class="row q-gutter-sm">
-            <q-btn
-              v-for="d in DISTRITAIS"
-              :key="d"
-              :label="d"
-              :color="distritalSelecionada === d ? 'primary' : 'grey-7'"
-              :unelevated="distritalSelecionada === d"
-              :outline="distritalSelecionada !== d"
-              no-caps
-              class="distrital-btn"
-              @click="selectDistrital(d)"
-            />
-          </div>
-        </q-card-section>
-      </q-card>
+            <q-btn flat dense no-caps icon="close" label="Fechar" color="grey-6" @click="closeImport" />
+          </q-card-section>
+        </q-card>
 
-      <!-- Conteúdo do histórico -->
-      <div v-if="distritalSelecionada">
-
-        <!-- Barra de ações -->
+        <!-- Busca nos importados -->
         <div class="action-bar q-mb-md">
-          <div>
-            <div class="action-bar__title">
-              {{ distritalSelecionada }} —
-              <span class="text-primary">{{ entries.length }} registro(s)</span>
-            </div>
+          <div class="action-bar__title">
+            <span class="text-primary">{{ filteredImportedEntries.length }}</span> de {{ importedEntries.length }} registro(s)
           </div>
           <div class="search-bar">
             <q-icon name="search" size="18px" class="search-bar__icon" />
             <input
-              v-model="searchQuery"
+              v-model="importSearchQuery"
               class="search-bar__input"
               type="text"
               placeholder="Buscar por obra, PEP, município..."
             />
             <q-btn
-              v-if="searchQuery"
+              v-if="importSearchQuery"
               flat round dense icon="close" size="xs"
               class="search-bar__clear"
-              @click="searchQuery = ''"
-            />
-          </div>
-          <div class="action-bar__actions">
-            <q-btn
-              outline
-              color="primary"
-              icon="download"
-              label="Exportar JSON"
-              no-caps
-              :disable="entries.length === 0"
-              @click="handleExportJson"
-            />
-            <q-btn
-              outline
-              color="primary"
-              icon="refresh"
-              no-caps
-              :loading="loading"
-              @click="loadEntries"
+              @click="importSearchQuery = ''"
             />
           </div>
         </div>
 
-        <!-- Loading -->
-        <div v-if="loading" class="flex flex-center q-py-xl">
-          <q-spinner color="primary" size="48px" />
+        <div v-if="filteredImportedEntries.length === 0" class="empty-state">
+          <q-icon name="search_off" size="56px" color="grey-4" />
+          <div class="text-subtitle1 text-grey-6">Nenhum registro encontrado.</div>
         </div>
 
-        <!-- Sem registros -->
-        <div v-else-if="filteredEntries.length === 0" class="empty-state">
-          <q-icon name="inbox" size="56px" color="grey-4" />
-          <div class="text-subtitle1 text-grey-6">
-            {{ searchQuery ? 'Nenhum registro encontrado.' : 'Nenhum registro salvo para esta distrital.' }}
-          </div>
-          <div v-if="!searchQuery" class="text-caption text-grey-5">
-            Os registros aparecem aqui ao exportar o formulário de Consumidores.
-          </div>
-        </div>
-
-        <!-- Lista de registros -->
-        <div v-else class="q-gutter-md">
+        <div v-else class="q-gutter-md q-mb-xl">
           <q-card
-            v-for="entry in filteredEntries"
+            v-for="entry in filteredImportedEntries"
             :key="entry.id"
             flat
             class="premium-card historico-card"
           >
-            <div class="historico-card__header" @click="toggleEntry(entry.id)">
+            <div class="historico-card__header" @click="toggleImportedEntry(entry.id)">
               <div class="historico-card__info">
                 <div class="historico-card__title">
                   <q-icon name="groups" size="16px" color="primary" />
                   <strong>{{ entry.descricaoObra || '(sem descrição)' }}</strong>
+                  <q-badge color="teal" label="importado" dense class="q-ml-xs" />
                 </div>
                 <div class="historico-card__meta">
                   <span><q-icon name="today" size="14px" /> {{ entry.dataConclusao }}</span>
@@ -136,29 +88,16 @@
                   Salvo em {{ formatDate(entry.id) }}
                 </div>
               </div>
-              <div class="row items-center q-gutter-xs">
-                <q-btn
-                  flat round dense
-                  icon="delete_outline"
-                  color="negative"
-                  size="sm"
-                  @click.stop="handleDeleteEntry(entry)"
-                >
-                  <q-tooltip>Remover registro</q-tooltip>
-                </q-btn>
-                <q-icon
-                  :name="expandedIds.has(entry.id) ? 'expand_less' : 'expand_more'"
-                  size="24px"
-                  color="grey-6"
-                />
-              </div>
+              <q-icon
+                :name="importedExpandedIds.has(entry.id) ? 'expand_less' : 'expand_more'"
+                size="24px"
+                color="grey-6"
+              />
             </div>
 
-            <!-- Tabela expandida de consumidores -->
             <q-slide-transition>
-              <div v-if="expandedIds.has(entry.id)">
+              <div v-if="importedExpandedIds.has(entry.id)">
                 <q-separator />
-                <!-- Detalhes da obra -->
                 <q-card-section class="obra-details q-py-sm q-px-md">
                   <div class="obra-details__grid">
                     <div class="obra-details__item">
@@ -182,8 +121,7 @@
                 <q-separator />
                 <q-card-section class="q-pa-sm">
                   <q-table
-                    flat
-                    dense
+                    flat dense
                     :rows="entry.consumidores"
                     :columns="consumidorColumns"
                     row-key="numeroMedidor"
@@ -198,13 +136,214 @@
             </q-slide-transition>
           </q-card>
         </div>
-      </div>
+      </template>
 
-      <!-- Nenhuma distrital selecionada -->
-      <div v-else class="empty-state q-mt-xl">
-        <q-icon name="touch_app" size="56px" color="grey-4" />
-        <div class="text-subtitle1 text-grey-6">Selecione uma distrital acima</div>
-      </div>
+      <!-- ───── HISTÓRICO SALVO (IndexedDB) ───── -->
+      <template v-else>
+
+        <!-- Seletor de distrital -->
+        <q-card flat class="premium-card q-mb-md">
+          <div class="premium-card__header">
+            <div class="premium-card__header-title">
+              <div class="premium-card__header-icon">
+                <q-icon name="location_city" size="22px" />
+              </div>
+              Distrital
+            </div>
+            <!-- Botão Importar JSON -->
+            <q-btn
+              outline
+              color="primary"
+              icon="upload_file"
+              label="Importar JSON"
+              no-caps
+              size="sm"
+              @click="triggerImport"
+            />
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".json"
+              style="display: none"
+              @change="handleImportJson"
+            />
+          </div>
+          <q-card-section class="premium-card__body">
+            <div class="row q-gutter-sm">
+              <q-btn
+                v-for="d in DISTRITAIS"
+                :key="d"
+                :label="d"
+                :color="distritalSelecionada === d ? 'primary' : 'grey-7'"
+                :unelevated="distritalSelecionada === d"
+                :outline="distritalSelecionada !== d"
+                no-caps
+                class="distrital-btn"
+                @click="selectDistrital(d)"
+              />
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- Conteúdo do histórico -->
+        <div v-if="distritalSelecionada">
+
+          <!-- Barra de ações -->
+          <div class="action-bar q-mb-md">
+            <div>
+              <div class="action-bar__title">
+                {{ distritalSelecionada }} —
+                <span class="text-primary">{{ entries.length }} registro(s)</span>
+              </div>
+            </div>
+            <div class="search-bar">
+              <q-icon name="search" size="18px" class="search-bar__icon" />
+              <input
+                v-model="searchQuery"
+                class="search-bar__input"
+                type="text"
+                placeholder="Buscar por obra, PEP, município..."
+              />
+              <q-btn
+                v-if="searchQuery"
+                flat round dense icon="close" size="xs"
+                class="search-bar__clear"
+                @click="searchQuery = ''"
+              />
+            </div>
+            <div class="action-bar__actions">
+              <q-btn
+                outline
+                color="primary"
+                icon="download"
+                label="Exportar JSON"
+                no-caps
+                :disable="entries.length === 0"
+                @click="handleExportJson"
+              />
+              <q-btn
+                outline
+                color="primary"
+                icon="refresh"
+                no-caps
+                :loading="loading"
+                @click="loadEntries"
+              />
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="loading" class="flex flex-center q-py-xl">
+            <q-spinner color="primary" size="48px" />
+          </div>
+
+          <!-- Sem registros -->
+          <div v-else-if="filteredEntries.length === 0" class="empty-state">
+            <q-icon name="inbox" size="56px" color="grey-4" />
+            <div class="text-subtitle1 text-grey-6">
+              {{ searchQuery ? 'Nenhum registro encontrado.' : 'Nenhum registro salvo para esta distrital.' }}
+            </div>
+            <div v-if="!searchQuery" class="text-caption text-grey-5">
+              Os registros aparecem aqui ao exportar o formulário de Consumidores.
+            </div>
+          </div>
+
+          <!-- Lista de registros -->
+          <div v-else class="q-gutter-md">
+            <q-card
+              v-for="entry in filteredEntries"
+              :key="entry.id"
+              flat
+              class="premium-card historico-card"
+            >
+              <div class="historico-card__header" @click="toggleEntry(entry.id)">
+                <div class="historico-card__info">
+                  <div class="historico-card__title">
+                    <q-icon name="groups" size="16px" color="primary" />
+                    <strong>{{ entry.descricaoObra || '(sem descrição)' }}</strong>
+                  </div>
+                  <div class="historico-card__meta">
+                    <span><q-icon name="today" size="14px" /> {{ entry.dataConclusao }}</span>
+                    <span><q-icon name="location_on" size="14px" /> {{ entry.municipio }}</span>
+                    <span v-if="entry.localidade"><q-icon name="place" size="14px" /> {{ entry.localidade }}</span>
+                    <span><q-icon name="tag" size="14px" /> {{ entry.elementoPep }}</span>
+                    <q-badge color="primary" :label="`${entry.totalConsumidores} consumidores`" class="q-ml-xs" />
+                  </div>
+                  <div class="text-caption text-grey-5 q-mt-xs">
+                    Salvo em {{ formatDate(entry.id) }}
+                  </div>
+                </div>
+                <div class="row items-center q-gutter-xs">
+                  <q-btn
+                    flat round dense
+                    icon="delete_outline"
+                    color="negative"
+                    size="sm"
+                    @click.stop="handleDeleteEntry(entry)"
+                  >
+                    <q-tooltip>Remover registro</q-tooltip>
+                  </q-btn>
+                  <q-icon
+                    :name="expandedIds.has(entry.id) ? 'expand_less' : 'expand_more'"
+                    size="24px"
+                    color="grey-6"
+                  />
+                </div>
+              </div>
+
+              <!-- Tabela expandida de consumidores -->
+              <q-slide-transition>
+                <div v-if="expandedIds.has(entry.id)">
+                  <q-separator />
+                  <!-- Detalhes da obra -->
+                  <q-card-section class="obra-details q-py-sm q-px-md">
+                    <div class="obra-details__grid">
+                      <div class="obra-details__item">
+                        <span class="obra-details__label">Elemento PEP</span>
+                        <span class="obra-details__value">{{ entry.elementoPep || '—' }}</span>
+                      </div>
+                      <div class="obra-details__item">
+                        <span class="obra-details__label">Município</span>
+                        <span class="obra-details__value">{{ entry.municipio || '—' }}</span>
+                      </div>
+                      <div class="obra-details__item">
+                        <span class="obra-details__label">Localidade</span>
+                        <span class="obra-details__value">{{ entry.localidade || '—' }}</span>
+                      </div>
+                      <div class="obra-details__item">
+                        <span class="obra-details__label">Data Conclusão</span>
+                        <span class="obra-details__value">{{ entry.dataConclusao || '—' }}</span>
+                      </div>
+                    </div>
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section class="q-pa-sm">
+                    <q-table
+                      flat
+                      dense
+                      :rows="entry.consumidores"
+                      :columns="consumidorColumns"
+                      row-key="numeroMedidor"
+                      :pagination="{ rowsPerPage: 0 }"
+                      hide-pagination
+                      virtual-scroll
+                      :virtual-scroll-item-size="44"
+                      style="max-height: 360px"
+                    />
+                  </q-card-section>
+                </div>
+              </q-slide-transition>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- Nenhuma distrital selecionada -->
+        <div v-else class="empty-state q-mt-xl">
+          <q-icon name="touch_app" size="56px" color="grey-4" />
+          <div class="text-subtitle1 text-grey-6">Selecione uma distrital acima</div>
+        </div>
+
+      </template>
     </div>
   </q-page>
 </template>
@@ -223,12 +362,21 @@ import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
 
 const $q = useQuasar();
 
+// ─── Estado: histórico do IndexedDB ──────────────────────────────────────────
 const distritalSelecionada = ref<DistritalCode | null>(null);
 const entries = ref<HistoricoEntry[]>([]);
 const loading = ref(false);
 const searchQuery = ref('');
 const expandedIds = ref<Set<string>>(new Set());
 
+// ─── Estado: JSON importado ───────────────────────────────────────────────────
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const importedEntries = ref<HistoricoEntry[] | null>(null);
+const importedFileName = ref('');
+const importSearchQuery = ref('');
+const importedExpandedIds = ref<Set<string>>(new Set());
+
+// ─── Computed ─────────────────────────────────────────────────────────────────
 const filteredEntries = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return entries.value;
@@ -242,6 +390,20 @@ const filteredEntries = computed(() => {
   );
 });
 
+const filteredImportedEntries = computed(() => {
+  const q = importSearchQuery.value.trim().toLowerCase();
+  if (!q) return importedEntries.value ?? [];
+  return (importedEntries.value ?? []).filter(
+    (e) =>
+      e.descricaoObra.toLowerCase().includes(q) ||
+      e.elementoPep.toLowerCase().includes(q) ||
+      e.municipio.toLowerCase().includes(q) ||
+      e.localidade.toLowerCase().includes(q) ||
+      e.dataConclusao.includes(q),
+  );
+});
+
+// ─── Colunas da tabela ────────────────────────────────────────────────────────
 const consumidorColumns: QTableColumn[] = [
   { name: 'nome', label: 'NOME', field: 'nome', align: 'left', sortable: true },
   { name: 'numeroMedidor', label: 'Nº MEDIDOR', field: 'numeroMedidor', align: 'left' },
@@ -251,6 +413,7 @@ const consumidorColumns: QTableColumn[] = [
   { name: 'dataLigacao', label: 'DATA LIGAÇÃO', field: 'dataLigacao', align: 'center' },
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleString('pt-BR');
@@ -260,13 +423,16 @@ function formatDate(iso: string): string {
 }
 
 function toggleEntry(id: string) {
-  if (expandedIds.value.has(id)) {
-    expandedIds.value.delete(id);
-  } else {
-    expandedIds.value.add(id);
-  }
+  if (expandedIds.value.has(id)) expandedIds.value.delete(id);
+  else expandedIds.value.add(id);
 }
 
+function toggleImportedEntry(id: string) {
+  if (importedExpandedIds.value.has(id)) importedExpandedIds.value.delete(id);
+  else importedExpandedIds.value.add(id);
+}
+
+// ─── IndexedDB ────────────────────────────────────────────────────────────────
 async function loadEntries() {
   if (!distritalSelecionada.value) return;
   loading.value = true;
@@ -319,6 +485,51 @@ function handleDeleteEntry(entry: HistoricoEntry) {
       });
     }
   });
+}
+
+// ─── Importar JSON ────────────────────────────────────────────────────────────
+function triggerImport() {
+  fileInputRef.value?.click();
+}
+
+function handleImportJson(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target?.result as string) as unknown;
+      if (!Array.isArray(data)) throw new Error('O arquivo não contém uma lista de registros.');
+
+      importedEntries.value = data as HistoricoEntry[];
+      importedFileName.value = file.name;
+      importedExpandedIds.value.clear();
+      importSearchQuery.value = '';
+
+      $q.notify({
+        type: 'positive',
+        icon: 'folder_open',
+        message: `${importedEntries.value.length} registro(s) carregado(s) de "${file.name}".`,
+      });
+    } catch (err) {
+      $q.notify({
+        type: 'negative',
+        message: err instanceof Error ? err.message : 'Arquivo JSON inválido.',
+      });
+    } finally {
+      // Reset input para permitir importar o mesmo arquivo novamente
+      (event.target as HTMLInputElement).value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function closeImport() {
+  importedEntries.value = null;
+  importedFileName.value = '';
+  importSearchQuery.value = '';
+  importedExpandedIds.value.clear();
 }
 </script>
 
@@ -419,5 +630,34 @@ function handleDeleteEntry(entry: HistoricoEntry) {
 .obra-details__value {
   font-size: 13px;
   font-weight: 500;
+}
+
+/* Banner de importação */
+.import-banner {
+  border: 1px solid rgba(var(--q-primary-rgb, 25, 118, 210), 0.3) !important;
+  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.04) !important;
+}
+
+.import-banner__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px !important;
+}
+
+.import-banner__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.import-banner__title {
+  font-size: 14px;
+}
+
+.import-banner__sub {
+  font-size: 12px;
+  color: var(--q-color-grey-6, #757575);
 }
 </style>
