@@ -13,40 +13,6 @@
         </p>
       </header>
 
-      <!-- Seletor de Distrital -->
-      <q-card flat class="premium-card q-mb-md">
-        <div class="premium-card__header">
-          <div class="premium-card__header-title">
-            <div class="premium-card__header-icon">
-              <q-icon name="location_city" size="22px" />
-            </div>
-            Distrital
-          </div>
-          <div v-if="distrital" class="row items-center q-gutter-xs">
-            <q-icon name="check_circle" color="positive" size="16px" />
-            <span class="text-caption text-positive">Histórico será salvo ao exportar</span>
-          </div>
-        </div>
-        <q-card-section class="premium-card__body">
-          <div class="row q-gutter-sm items-center">
-            <q-btn
-              v-for="d in DISTRITAIS"
-              :key="d"
-              :label="d"
-              :color="distrital === d ? 'primary' : 'grey-7'"
-              :unelevated="distrital === d"
-              :outline="distrital !== d"
-              no-caps
-              class="distrital-btn"
-              @click="distrital = (distrital === d ? '' : d)"
-            />
-            <span v-if="!distrital" class="text-caption text-grey-5 q-ml-sm">
-              (opcional — necessário para salvar o histórico)
-            </span>
-          </div>
-        </q-card-section>
-      </q-card>
-
       <q-card flat class="premium-card q-mb-md">
         <div class="premium-card__header">
           <div class="premium-card__header-title">
@@ -555,16 +521,10 @@ import {
 } from 'src/utils/desligamento-helpers';
 import { exportDesligamentoToExcel } from 'src/utils/desligamento-excel';
 import { exportDesligamentoToPdf } from 'src/utils/desligamento-pdf';
-import {
-  DISTRITAIS,
-  appendHistoricoEntry,
-  getHistoricoDirHandle,
-} from 'src/utils/historico-file';
-import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
 
 const $q = useQuasar();
 const store = useDesligamentoStore();
-const { obra, solicitacao, consumidores, evidencias, distrital } = storeToRefs(store);
+const { obra, solicitacao, consumidores, evidencias } = storeToRefs(store);
 const { addConsumidor, removeConsumidor, resetForm } = store;
 
 const siPdfInput = ref<HTMLInputElement | null>(null);
@@ -875,54 +835,6 @@ function ensureExportavel(): boolean {
   return true;
 }
 
-async function salvarHistorico(): Promise<void> {
-  if (!distrital.value) return;
-
-  const preenchidos = consumidores.value.filter(
-    (c) => c.contaContrato || c.numeroMedidor || c.nomeCompleto,
-  );
-
-  const entry: HistoricoEntry = {
-    id: new Date().toISOString(),
-    distrital: distrital.value as DistritalCode,
-    siMes: obra.value.siMes,
-    dataDesligamento: obra.value.data,
-    nota: obra.value.nota,
-    pep: obra.value.pep,
-    cidade: obra.value.cidade,
-    inicioDesligamento: solicitacao.value.inicioDesligamento,
-    fimDesligamento: solicitacao.value.fimDesligamento,
-    totalConsumidores: preenchidos.length,
-    comProtocolo: preenchidos.filter((c) => c.protocolar === 'SIM').length,
-    semProtocolo: preenchidos.filter((c) => c.protocolar === 'NAO').length,
-    consumidores: preenchidos.map((c) => ({
-      numeroMedidor: c.numeroMedidor,
-      contaContrato: c.contaContrato,
-      nomeCompleto: c.nomeCompleto,
-      protocolar: c.protocolar,
-    })),
-  };
-
-  try {
-    // Garante que o handle de pasta existe antes de exportar
-    await getHistoricoDirHandle();
-    await appendHistoricoEntry(entry);
-    $q.notify({
-      type: 'info',
-      icon: 'save',
-      message: `Histórico salvo em C:\\CGB\\consumidores-${distrital.value}.json`,
-      timeout: 3500,
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    $q.notify({
-      type: 'warning',
-      message: 'Exportação concluída, mas o histórico não foi salvo: ' +
-        (error instanceof Error ? error.message : 'Erro desconhecido.'),
-    });
-  }
-}
-
 async function handleExport() {
   if (!ensureExportavel()) return;
 
@@ -937,7 +849,6 @@ async function handleExport() {
       type: 'positive',
       message: `Arquivo ${fileName} gerado com sucesso.`,
     });
-    await salvarHistorico();
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -958,7 +869,6 @@ async function handleExportPdf() {
       evidencias.value,
     );
     $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
-    await salvarHistorico();
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -987,9 +897,4 @@ function handleReset() {
   min-width: 900px;
 }
 
-.distrital-btn {
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  min-width: 72px;
-}
 </style>

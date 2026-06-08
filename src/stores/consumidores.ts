@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { consumidorComDados } from '../utils/consumidor-helpers';
+import type { DistritalCode } from 'src/utils/historico-file';
 
 export const FORNECEDOR_FIXO = 'CGB ENGENHARIA' as const;
 export const REGIONAL_FIXA = 'CENTRO' as const;
@@ -65,6 +66,8 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
     Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1)),
   );
 
+  const distrital = ref<DistritalCode | ''>('');
+
   function syncDatas(data: string) {
     obra.value.dataConclusao = data;
     obra.value.dataEnergizacao = data;
@@ -111,5 +114,5 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
     consumidores.value = Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1));
   }
 
-  return { obra, consumidores, addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor };
+  return { obra, consumidores, distrital, addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor };
 });

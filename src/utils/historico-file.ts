@@ -11,25 +11,23 @@ export type DistritalCode = 'BCB' | 'BDC' | 'ITM' | 'PDS' | 'PDT' | 'STI';
 export const DISTRITAIS: DistritalCode[] = ['BCB', 'BDC', 'ITM', 'PDS', 'PDT', 'STI'];
 
 export interface HistoricoConsumidor {
+  nome: string;
   numeroMedidor: string;
-  contaContrato: string;
-  nomeCompleto: string;
-  protocolar: string;
+  tipoLigacao: string;
+  padrao: string;
+  posteLigacao: string;
+  dataLigacao: string;
 }
 
 export interface HistoricoEntry {
   id: string; // ISO timestamp — chave única
   distrital: DistritalCode;
-  siMes: string;
-  dataDesligamento: string;
-  nota: string;
-  pep: string;
-  cidade: string;
-  inicioDesligamento: string;
-  fimDesligamento: string;
+  descricaoObra: string;
+  elementoPep: string;
+  dataConclusao: string;
+  municipio: string;
+  localidade: string;
   totalConsumidores: number;
-  comProtocolo: number;
-  semProtocolo: number;
   consumidores: HistoricoConsumidor[];
 }
 

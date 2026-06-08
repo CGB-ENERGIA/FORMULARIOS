@@ -13,19 +13,47 @@
         </p>
       </header>
 
-      <!-- Acesso ao Histórico -->
-      <q-card flat class="premium-card q-mb-md historico-banner" @click="$router.push('/historico')">
-        <q-card-section class="historico-banner__body">
-          <div class="historico-banner__icon">
-            <q-icon name="history" size="28px" color="primary" />
+      <!-- Seletor de Distrital (obrigatório) -->
+      <q-card flat class="premium-card q-mb-md">
+        <div class="premium-card__header">
+          <div class="premium-card__header-title">
+            <div class="premium-card__header-icon">
+              <q-icon name="location_city" size="22px" />
+            </div>
+            Distrital
           </div>
-          <div class="historico-banner__text">
-            <div class="historico-banner__title">Histórico de Consumidores</div>
-            <div class="historico-banner__subtitle">Consulte os registros salvos por distrital (BCB, BDC, ITM, PDS, PDT, STI)</div>
+          <q-btn
+            flat dense no-caps
+            icon="history"
+            label="Ver Histórico"
+            color="primary"
+            size="sm"
+            @click="$router.push('/historico')"
+          />
+        </div>
+        <q-card-section class="premium-card__body">
+          <div class="row q-gutter-sm items-center">
+            <q-btn
+              v-for="d in DISTRITAIS"
+              :key="d"
+              :label="d"
+              :color="distrital === d ? 'primary' : 'grey-7'"
+              :unelevated="distrital === d"
+              :outline="distrital !== d"
+              no-caps
+              class="distrital-btn"
+              @click="distrital = d"
+            />
           </div>
-          <q-icon name="chevron_right" size="24px" color="grey-5" class="q-ml-auto" />
+          <div v-if="!distrital" class="distrital-hint">
+            <q-icon name="info" size="16px" color="warning" />
+            Selecione uma distrital para habilitar o formulário
+          </div>
         </q-card-section>
       </q-card>
+
+      <!-- Formulário — só aparece após selecionar distrital -->
+      <template v-if="distrital">
 
       <q-card flat class="premium-card q-mb-md">
         <div class="premium-card__header">
@@ -329,6 +357,10 @@
           </q-table>
         </div>
       </q-card>
+
+      </template>
+      <!-- /v-if distrital -->
+
     </div>
   </q-page>
 </template>
@@ -348,10 +380,16 @@ import {
   validateConsumidoresParaExportacao,
 } from 'src/utils/consumidor-helpers';
 import { getObraFieldError, validateObraParaExportacao } from 'src/utils/obra-helpers';
+import {
+  DISTRITAIS,
+  appendHistoricoEntry,
+  getHistoricoDirHandle,
+} from 'src/utils/historico-file';
+import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
 
 const $q = useQuasar();
 const store = useConsumidoresStore();
-const { obra, consumidores } = storeToRefs(store);
+const { obra, consumidores, distrital } = storeToRefs(store);
 const { addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor } = store;
 const obraValidacaoAtiva = ref(false);
 
@@ -425,6 +463,49 @@ function ensureExportavel(): boolean {
   return true;
 }
 
+async function salvarHistorico(): Promise<void> {
+  if (!distrital.value) return;
+
+  const preenchidos = consumidores.value.filter(consumidorPreenchido);
+
+  const entry: HistoricoEntry = {
+    id: new Date().toISOString(),
+    distrital: distrital.value as DistritalCode,
+    descricaoObra: obra.value.descricaoObra,
+    elementoPep: obra.value.elementoPep,
+    dataConclusao: obra.value.dataConclusao,
+    municipio: obra.value.municipio,
+    localidade: obra.value.localidade,
+    totalConsumidores: preenchidos.length,
+    consumidores: preenchidos.map((c) => ({
+      nome: c.nome,
+      numeroMedidor: c.numeroMedidor,
+      tipoLigacao: c.tipoLigacao,
+      padrao: c.padrao,
+      posteLigacao: c.posteLigacao,
+      dataLigacao: c.dataLigacao,
+    })),
+  };
+
+  try {
+    await getHistoricoDirHandle();
+    await appendHistoricoEntry(entry);
+    $q.notify({
+      type: 'info',
+      icon: 'save',
+      message: `Histórico salvo em consumidores-${distrital.value}.json`,
+      timeout: 3500,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    $q.notify({
+      type: 'warning',
+      message: 'Exportação concluída, mas o histórico não foi salvo: ' +
+        (error instanceof Error ? error.message : 'Erro desconhecido.'),
+    });
+  }
+}
+
 async function handleExport() {
   if (!ensureExportavel()) return;
 
@@ -434,6 +515,7 @@ async function handleExport() {
       type: 'positive',
       message: `Arquivo ${fileName} gerado com sucesso.`,
     });
+    await salvarHistorico();
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -459,6 +541,7 @@ async function handleExportPdf() {
       type: 'positive',
       message: `Arquivo ${fileName} gerado com sucesso.`,
     });
+    await salvarHistorico();
   } catch (error) {
     dismiss();
     $q.notify({
@@ -484,47 +567,18 @@ function handleReset() {
 </script>
 
 <style scoped>
-.historico-banner {
-  cursor: pointer;
-  border: 1px solid rgba(var(--q-primary-rgb, 37, 99, 235), 0.2);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.historico-banner:hover {
-  border-color: var(--q-primary);
-  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.1);
-}
-
-.historico-banner__body {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 20px;
-}
-
-.historico-banner__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(var(--q-primary-rgb, 37, 99, 235), 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.historico-banner__text {
-  flex: 1;
-}
-
-.historico-banner__title {
+.distrital-btn {
   font-weight: 600;
-  font-size: 14px;
+  letter-spacing: 0.5px;
+  min-width: 72px;
 }
 
-.historico-banner__subtitle {
-  font-size: 12px;
-  color: var(--q-color-grey-6, #757575);
-  margin-top: 2px;
+.distrital-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--q-color-warning, #f59e0b);
 }
 </style>

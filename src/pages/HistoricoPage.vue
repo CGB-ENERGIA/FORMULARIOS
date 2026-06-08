@@ -135,21 +135,16 @@
             <div class="historico-card__header" @click="toggleEntry(entry.id)">
               <div class="historico-card__info">
                 <div class="historico-card__si">
-                  <q-icon name="bolt" size="16px" color="primary" />
-                  <strong>SI {{ entry.siMes }}</strong>
+                  <q-icon name="groups" size="16px" color="primary" />
+                  <strong>{{ entry.descricaoObra || '(sem descrição)' }}</strong>
                 </div>
                 <div class="historico-card__meta">
-                  <span><q-icon name="today" size="14px" /> {{ entry.dataDesligamento }}</span>
-                  <span><q-icon name="location_on" size="14px" /> {{ entry.cidade }}</span>
-                  <span><q-icon name="assignment" size="14px" /> Nota {{ entry.nota }}</span>
+                  <span><q-icon name="today" size="14px" /> {{ entry.dataConclusao }}</span>
+                  <span><q-icon name="location_on" size="14px" /> {{ entry.municipio }}</span>
+                  <span v-if="entry.localidade"><q-icon name="place" size="14px" /> {{ entry.localidade }}</span>
+                  <span><q-icon name="tag" size="14px" /> {{ entry.elementoPep }}</span>
                   <span class="q-ml-sm">
                     <q-badge color="primary" :label="`${entry.totalConsumidores} consumidores`" />
-                  </span>
-                  <span v-if="entry.semProtocolo > 0">
-                    <q-badge color="grey-6" :label="`${entry.semProtocolo} s/ protocolo`" class="q-ml-xs" />
-                  </span>
-                  <span v-if="entry.comProtocolo > 0">
-                    <q-badge color="teal" :label="`${entry.comProtocolo} c/ protocolo`" class="q-ml-xs" />
                   </span>
                 </div>
                 <div class="text-caption text-grey-5 q-mt-xs">
@@ -240,19 +235,21 @@ const filteredEntries = computed(() => {
     .reverse()
     .filter(
       (e) =>
-        e.siMes.toLowerCase().includes(q) ||
-        e.nota.toLowerCase().includes(q) ||
-        e.cidade.toLowerCase().includes(q) ||
-        e.pep.toLowerCase().includes(q) ||
-        e.dataDesligamento.includes(q),
+        e.descricaoObra.toLowerCase().includes(q) ||
+        e.elementoPep.toLowerCase().includes(q) ||
+        e.municipio.toLowerCase().includes(q) ||
+        e.localidade.toLowerCase().includes(q) ||
+        e.dataConclusao.includes(q),
     );
 });
 
 const consumidorColumns: QTableColumn[] = [
-  { name: 'nomeCompleto', label: 'NOME COMPLETO', field: 'nomeCompleto', align: 'left', sortable: true },
-  { name: 'contaContrato', label: 'CONTA CONTRATO', field: 'contaContrato', align: 'left', sortable: true },
+  { name: 'nome', label: 'NOME', field: 'nome', align: 'left', sortable: true },
   { name: 'numeroMedidor', label: 'Nº MEDIDOR', field: 'numeroMedidor', align: 'left' },
-  { name: 'protocolar', label: 'PROTOCOLAR', field: 'protocolar', align: 'center' },
+  { name: 'tipoLigacao', label: 'TIPO', field: 'tipoLigacao', align: 'center' },
+  { name: 'padrao', label: 'PADRÃO', field: 'padrao', align: 'center' },
+  { name: 'posteLigacao', label: 'POSTE', field: 'posteLigacao', align: 'left' },
+  { name: 'dataLigacao', label: 'DATA LIGAÇÃO', field: 'dataLigacao', align: 'center' },
 ];
 
 function formatDate(iso: string): string {
@@ -322,7 +319,7 @@ async function handleAlterarPasta() {
 function handleDeleteEntry(entry: HistoricoEntry) {
   $q.dialog({
     title: 'Remover registro',
-    message: `Remover o registro da SI ${entry.siMes} (${entry.dataDesligamento})?`,
+    message: `Remover o registro "${entry.descricaoObra}" (${entry.dataConclusao})?`,
     cancel: true,
     persistent: true,
   }).onOk(async () => {
