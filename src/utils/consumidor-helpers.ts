@@ -80,10 +80,17 @@ export function validateConsumidoresParaExportacao(consumidores: Consumidor[]): 
 
   const errors: string[] = [];
   for (const consumidor of preenchidos) {
-    const error = validateMedidorPorTipoLigacao(consumidor);
-    if (error) {
-      const identificacao = consumidor.nome ? ` (${consumidor.nome})` : '';
-      errors.push(`Linha ${consumidor.id}${identificacao}: ${error}`);
+    const identificacao = consumidor.nome
+      ? ` (${consumidor.nome})`
+      : ` linha ${consumidor.id}`;
+
+    const medidorError = validateMedidorPorTipoLigacao(consumidor);
+    if (medidorError) {
+      errors.push(`Linha ${consumidor.id}${identificacao}: ${medidorError}`);
+    }
+
+    if (!consumidor.padrao) {
+      errors.push(`Linha ${consumidor.id}${identificacao}: selecione o Padrão (5M, 7M ou CPP).`);
     }
   }
 
