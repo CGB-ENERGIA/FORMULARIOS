@@ -8,7 +8,7 @@
         </div>
         <h1 class="page-header__title">Histórico de Consumidores</h1>
         <p class="page-header__subtitle">
-          Registros salvos automaticamente ao exportar formulários de desligamento, organizados por distrital.
+          Registros salvos automaticamente ao exportar, organizados por distrital.
         </p>
       </header>
 
@@ -21,39 +21,9 @@
             </div>
             Distrital
           </div>
-          <div class="row q-gutter-xs">
-            <q-btn
-              v-if="hasPastaConfigurada"
-              flat
-              dense
-              no-caps
-              color="grey-6"
-              icon="folder_open"
-              label="Alterar pasta"
-              size="sm"
-              @click="handleAlterarPasta"
-            />
-          </div>
         </div>
         <q-card-section class="premium-card__body">
-          <div v-if="!hasPastaConfigurada" class="pasta-aviso">
-            <q-icon name="folder_off" size="32px" color="grey-5" />
-            <div>
-              <div class="text-subtitle2">Nenhuma pasta configurada</div>
-              <div class="text-caption text-grey-6">
-                Configure a pasta onde os arquivos de histórico são salvos (ex: C:\CGB\).
-              </div>
-            </div>
-            <q-btn
-              unelevated
-              color="primary"
-              icon="folder_open"
-              label="Escolher pasta"
-              no-caps
-              @click="handleEscolherPasta"
-            />
-          </div>
-          <div v-else class="row q-gutter-sm">
+          <div class="row q-gutter-sm">
             <q-btn
               v-for="d in DISTRITAIS"
               :key="d"
@@ -70,7 +40,7 @@
       </q-card>
 
       <!-- Conteúdo do histórico -->
-      <div v-if="hasPastaConfigurada && distritalSelecionada">
+      <div v-if="distritalSelecionada">
 
         <!-- Barra de ações -->
         <div class="action-bar q-mb-md">
@@ -86,7 +56,7 @@
               v-model="searchQuery"
               class="search-bar__input"
               type="text"
-              placeholder="Buscar por SI, nota, cidade..."
+              placeholder="Buscar por obra, PEP, município..."
             />
             <q-btn
               v-if="searchQuery"
@@ -99,8 +69,16 @@
             <q-btn
               outline
               color="primary"
+              icon="download"
+              label="Exportar JSON"
+              no-caps
+              :disable="entries.length === 0"
+              @click="handleExportJson"
+            />
+            <q-btn
+              outline
+              color="primary"
               icon="refresh"
-              label="Atualizar"
               no-caps
               :loading="loading"
               @click="loadEntries"
@@ -114,13 +92,13 @@
         </div>
 
         <!-- Sem registros -->
-        <div v-else-if="!loading && filteredEntries.length === 0" class="empty-state">
+        <div v-else-if="filteredEntries.length === 0" class="empty-state">
           <q-icon name="inbox" size="56px" color="grey-4" />
           <div class="text-subtitle1 text-grey-6">
             {{ searchQuery ? 'Nenhum registro encontrado.' : 'Nenhum registro salvo para esta distrital.' }}
           </div>
           <div v-if="!searchQuery" class="text-caption text-grey-5">
-            Os registros aparecem aqui ao exportar o formulário de Desligamento.
+            Os registros aparecem aqui ao exportar o formulário de Consumidores.
           </div>
         </div>
 
@@ -134,7 +112,7 @@
           >
             <div class="historico-card__header" @click="toggleEntry(entry.id)">
               <div class="historico-card__info">
-                <div class="historico-card__si">
+                <div class="historico-card__title">
                   <q-icon name="groups" size="16px" color="primary" />
                   <strong>{{ entry.descricaoObra || '(sem descrição)' }}</strong>
                 </div>
@@ -143,9 +121,7 @@
                   <span><q-icon name="location_on" size="14px" /> {{ entry.municipio }}</span>
                   <span v-if="entry.localidade"><q-icon name="place" size="14px" /> {{ entry.localidade }}</span>
                   <span><q-icon name="tag" size="14px" /> {{ entry.elementoPep }}</span>
-                  <span class="q-ml-sm">
-                    <q-badge color="primary" :label="`${entry.totalConsumidores} consumidores`" />
-                  </span>
+                  <q-badge color="primary" :label="`${entry.totalConsumidores} consumidores`" class="q-ml-xs" />
                 </div>
                 <div class="text-caption text-grey-5 q-mt-xs">
                   Salvo em {{ formatDate(entry.id) }}
@@ -179,7 +155,7 @@
                     dense
                     :rows="entry.consumidores"
                     :columns="consumidorColumns"
-                    row-key="contaContrato"
+                    row-key="numeroMedidor"
                     :pagination="{ rowsPerPage: 0 }"
                     hide-pagination
                     virtual-scroll
@@ -194,10 +170,7 @@
       </div>
 
       <!-- Nenhuma distrital selecionada -->
-      <div
-        v-else-if="hasPastaConfigurada && !distritalSelecionada"
-        class="empty-state q-mt-xl"
-      >
+      <div v-else class="empty-state q-mt-xl">
         <q-icon name="touch_app" size="56px" color="grey-4" />
         <div class="text-subtitle1 text-grey-6">Selecione uma distrital acima</div>
       </div>
@@ -206,16 +179,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
 import {
   DISTRITAIS,
   loadHistoricoEntries,
   deleteHistoricoEntry,
-  getHistoricoDirHandle,
-  clearHistoricoDirHandle,
-  hasStoredDirHandle,
+  exportHistoricoAsJson,
 } from 'src/utils/historico-file';
 import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
 
@@ -224,23 +195,20 @@ const $q = useQuasar();
 const distritalSelecionada = ref<DistritalCode | null>(null);
 const entries = ref<HistoricoEntry[]>([]);
 const loading = ref(false);
-const hasPastaConfigurada = ref(false);
 const searchQuery = ref('');
 const expandedIds = ref<Set<string>>(new Set());
 
 const filteredEntries = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return [...entries.value].reverse(); // mais recente primeiro
-  return [...entries.value]
-    .reverse()
-    .filter(
-      (e) =>
-        e.descricaoObra.toLowerCase().includes(q) ||
-        e.elementoPep.toLowerCase().includes(q) ||
-        e.municipio.toLowerCase().includes(q) ||
-        e.localidade.toLowerCase().includes(q) ||
-        e.dataConclusao.includes(q),
-    );
+  if (!q) return entries.value;
+  return entries.value.filter(
+    (e) =>
+      e.descricaoObra.toLowerCase().includes(q) ||
+      e.elementoPep.toLowerCase().includes(q) ||
+      e.municipio.toLowerCase().includes(q) ||
+      e.localidade.toLowerCase().includes(q) ||
+      e.dataConclusao.includes(q),
+  );
 });
 
 const consumidorColumns: QTableColumn[] = [
@@ -290,30 +258,15 @@ async function selectDistrital(d: DistritalCode) {
   await loadEntries();
 }
 
-async function handleEscolherPasta() {
+async function handleExportJson() {
+  if (!distritalSelecionada.value) return;
   try {
-    await getHistoricoDirHandle();
-    hasPastaConfigurada.value = true;
-    $q.notify({ type: 'positive', message: 'Pasta configurada com sucesso!' });
+    await exportHistoricoAsJson(distritalSelecionada.value);
+    $q.notify({ type: 'positive', message: `Backup de ${distritalSelecionada.value} baixado.` });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    $q.notify({ type: 'negative', message: 'Não foi possível acessar a pasta.' });
+    $q.notify({ type: 'negative', message: 'Erro ao exportar backup.' });
+    console.error(error);
   }
-}
-
-async function handleAlterarPasta() {
-  $q.dialog({
-    title: 'Alterar pasta',
-    message: 'Deseja escolher uma nova pasta para salvar o histórico? O histórico atual nos arquivos não será apagado.',
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    await clearHistoricoDirHandle();
-    hasPastaConfigurada.value = false;
-    entries.value = [];
-    distritalSelecionada.value = null;
-    await handleEscolherPasta();
-  });
 }
 
 function handleDeleteEntry(entry: HistoricoEntry) {
@@ -336,10 +289,6 @@ function handleDeleteEntry(entry: HistoricoEntry) {
     }
   });
 }
-
-onMounted(async () => {
-  hasPastaConfigurada.value = await hasStoredDirHandle();
-});
 </script>
 
 <style scoped>
@@ -347,14 +296,6 @@ onMounted(async () => {
   font-weight: 600;
   letter-spacing: 0.5px;
   min-width: 72px;
-}
-
-.pasta-aviso {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 8px 0;
 }
 
 .historico-card {
@@ -384,7 +325,7 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.historico-card__si {
+.historico-card__title {
   display: flex;
   align-items: center;
   gap: 6px;

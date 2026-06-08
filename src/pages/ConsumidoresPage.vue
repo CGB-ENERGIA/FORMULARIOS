@@ -389,7 +389,6 @@ import { getObraFieldError, validateObraParaExportacao } from 'src/utils/obra-he
 import {
   DISTRITAIS,
   appendHistoricoEntry,
-  getHistoricoDirHandle,
 } from 'src/utils/historico-file';
 import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
 
@@ -507,21 +506,9 @@ async function salvarHistorico(): Promise<void> {
   };
 
   try {
-    await getHistoricoDirHandle();
     await appendHistoricoEntry(entry);
-    $q.notify({
-      type: 'info',
-      icon: 'save',
-      message: `Histórico salvo em consumidores-${distrital.value}.json`,
-      timeout: 3500,
-    });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    $q.notify({
-      type: 'warning',
-      message: 'Exportação concluída, mas o histórico não foi salvo: ' +
-        (error instanceof Error ? error.message : 'Erro desconhecido.'),
-    });
+    console.error('Erro ao salvar histórico:', error);
   }
 }
 
