@@ -9,7 +9,6 @@ const FIELD_LABELS: Record<ObraField, string> = {
   descricaoObra: 'Descrição da Obra',
   fornecedor: 'Fornecedor',
   elementoPep: 'Elemento PEP',
-  nota: 'Nota',
   dataConclusao: 'Data da Conclusão',
   dataEnergizacao: 'Data da Energização',
   tecObra: 'Téc da Obra',

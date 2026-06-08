@@ -129,8 +129,7 @@
                   <span><q-icon name="today" size="14px" /> {{ entry.dataConclusao }}</span>
                   <span><q-icon name="location_on" size="14px" /> {{ entry.municipio }}</span>
                   <span v-if="entry.localidade"><q-icon name="place" size="14px" /> {{ entry.localidade }}</span>
-                  <span><q-icon name="tag" size="14px" /> PEP: {{ entry.elementoPep }}</span>
-                  <span v-if="entry.nota"><q-icon name="receipt_long" size="14px" /> Nota: {{ entry.nota }}</span>
+                  <span><q-icon name="tag" size="14px" /> {{ entry.elementoPep }}</span>
                   <q-badge color="primary" :label="`${entry.totalConsumidores} consumidores`" class="q-ml-xs" />
                 </div>
                 <div class="text-caption text-grey-5 q-mt-xs">
@@ -215,7 +214,6 @@ const filteredEntries = computed(() => {
     (e) =>
       e.descricaoObra.toLowerCase().includes(q) ||
       e.elementoPep.toLowerCase().includes(q) ||
-      (e.nota ?? '').toLowerCase().includes(q) ||
       e.municipio.toLowerCase().includes(q) ||
       e.localidade.toLowerCase().includes(q) ||
       e.dataConclusao.includes(q),
