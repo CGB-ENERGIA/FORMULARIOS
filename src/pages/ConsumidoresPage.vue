@@ -13,6 +13,20 @@
         </p>
       </header>
 
+      <!-- Acesso ao Histórico -->
+      <q-card flat class="premium-card q-mb-md historico-banner" @click="$router.push('/historico')">
+        <q-card-section class="historico-banner__body">
+          <div class="historico-banner__icon">
+            <q-icon name="history" size="28px" color="primary" />
+          </div>
+          <div class="historico-banner__text">
+            <div class="historico-banner__title">Histórico de Desligamentos</div>
+            <div class="historico-banner__subtitle">Consulte os registros salvos por distrital (BCB, BDC, ITM, PDS, PDT, STI)</div>
+          </div>
+          <q-icon name="chevron_right" size="24px" color="grey-5" class="q-ml-auto" />
+        </q-card-section>
+      </q-card>
+
       <q-card flat class="premium-card q-mb-md">
         <div class="premium-card__header">
           <div class="premium-card__header-title">
@@ -468,3 +482,49 @@ function handleReset() {
   });
 }
 </script>
+
+<style scoped>
+.historico-banner {
+  cursor: pointer;
+  border: 1px solid rgba(var(--q-primary-rgb, 37, 99, 235), 0.2);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.historico-banner:hover {
+  border-color: var(--q-primary);
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.1);
+}
+
+.historico-banner__body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+}
+
+.historico-banner__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(var(--q-primary-rgb, 37, 99, 235), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.historico-banner__text {
+  flex: 1;
+}
+
+.historico-banner__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.historico-banner__subtitle {
+  font-size: 12px;
+  color: var(--q-color-grey-6, #757575);
+  margin-top: 2px;
+}
+</style>
