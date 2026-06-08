@@ -153,10 +153,10 @@ export async function getDirHandle(): Promise<FileSystemDirectoryHandle> {
     return saved;
   }
 
-  // Primeira vez: abre o seletor de pasta em Documentos
+  // Primeira vez: abre o seletor de pasta (começa na Área de Trabalho)
   const handle = await window.showDirectoryPicker({
     mode: 'readwrite',
-    startIn: 'documents',
+    startIn: 'desktop',
   });
   await idbSaveHandle(handle);
   _dirHandle = handle;
