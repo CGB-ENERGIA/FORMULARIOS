@@ -22,33 +22,14 @@
             </div>
             Distrital
           </div>
-          <div class="row q-gutter-xs items-center">
-            <q-chip
-              v-if="pastaConfigurada"
-              dense
-              color="positive"
-              text-color="white"
-              icon="folder"
-              :label="nomePasta || 'Pasta configurada'"
-              size="sm"
-            />
-            <q-btn
-              flat dense no-caps
-              :icon="pastaConfigurada ? 'folder_open' : 'folder_off'"
-              :label="pastaConfigurada ? 'Alterar pasta' : 'Configurar pasta'"
-              :color="pastaConfigurada ? 'grey-6' : 'warning'"
-              size="sm"
-              @click="handleConfigurarPasta"
-            />
-            <q-btn
-              flat dense no-caps
-              icon="history"
-              label="Ver Histórico"
-              color="primary"
-              size="sm"
-              @click="$router.push('/historico')"
-            />
-          </div>
+          <q-btn
+            flat dense no-caps
+            icon="history"
+            label="Ver Histórico"
+            color="primary"
+            size="sm"
+            @click="$router.push('/historico')"
+          />
         </div>
         <q-card-section class="premium-card__body">
           <div class="row q-gutter-sm items-center">
@@ -393,7 +374,7 @@
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useConsumidoresStore, FORNECEDOR_FIXO, REGIONAL_FIXA, TEC_OBRA_FIXO } from 'src/stores/consumidores';
 import type { ObraInfo } from 'src/stores/consumidores';
 import { consumidorPreenchido, exportToExcel } from 'src/utils/excel';
@@ -408,8 +389,6 @@ import { getObraFieldError, validateObraParaExportacao } from 'src/utils/obra-he
 import {
   DISTRITAIS,
   appendHistoricoEntry,
-  configurarPastaHistorico,
-  isPastaConfigurada,
 } from 'src/utils/historico-file';
 import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
 
@@ -417,24 +396,6 @@ const $q = useQuasar();
 const store = useConsumidoresStore();
 const { obra, consumidores, distrital } = storeToRefs(store);
 
-const pastaConfigurada = ref(false);
-const nomePasta = ref('');
-
-onMounted(async () => {
-  pastaConfigurada.value = await isPastaConfigurada();
-});
-
-async function handleConfigurarPasta() {
-  try {
-    const nome = await configurarPastaHistorico();
-    pastaConfigurada.value = true;
-    nomePasta.value = nome;
-    $q.notify({ type: 'positive', message: `Pasta "${nome}" configurada. Histórico será salvo aqui.` });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    $q.notify({ type: 'negative', message: 'Não foi possível configurar a pasta.' });
-  }
-}
 const { addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor } = store;
 const obraValidacaoAtiva = ref(false);
 
@@ -547,6 +508,7 @@ async function salvarHistorico(): Promise<void> {
 
   try {
     await appendHistoricoEntry(entry);
+    $q.notify({ type: 'info', icon: 'history', message: 'Registro salvo no histórico.', timeout: 2000 });
   } catch (error) {
     console.error('Erro ao salvar histórico:', error);
   }
