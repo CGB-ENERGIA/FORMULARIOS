@@ -153,10 +153,9 @@ export async function getDirHandle(): Promise<FileSystemDirectoryHandle> {
     return saved;
   }
 
-  // Primeira vez: abre o seletor de pasta (começa na Área de Trabalho)
+  // Primeira vez: abre o seletor de pasta (sem startIn para evitar erro com pastas do sistema/OneDrive)
   const handle = await window.showDirectoryPicker({
     mode: 'readwrite',
-    startIn: 'desktop',
   });
   await idbSaveHandle(handle);
   _dirHandle = handle;
