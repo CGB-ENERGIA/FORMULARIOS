@@ -158,6 +158,28 @@
             <q-slide-transition>
               <div v-if="expandedIds.has(entry.id)">
                 <q-separator />
+                <!-- Detalhes da obra -->
+                <q-card-section class="obra-details q-py-sm q-px-md">
+                  <div class="obra-details__grid">
+                    <div class="obra-details__item">
+                      <span class="obra-details__label">Elemento PEP</span>
+                      <span class="obra-details__value">{{ entry.elementoPep || '—' }}</span>
+                    </div>
+                    <div class="obra-details__item">
+                      <span class="obra-details__label">Município</span>
+                      <span class="obra-details__value">{{ entry.municipio || '—' }}</span>
+                    </div>
+                    <div class="obra-details__item">
+                      <span class="obra-details__label">Localidade</span>
+                      <span class="obra-details__value">{{ entry.localidade || '—' }}</span>
+                    </div>
+                    <div class="obra-details__item">
+                      <span class="obra-details__label">Data Conclusão</span>
+                      <span class="obra-details__value">{{ entry.dataConclusao || '—' }}</span>
+                    </div>
+                  </div>
+                </q-card-section>
+                <q-separator />
                 <q-card-section class="q-pa-sm">
                   <q-table
                     flat
@@ -363,5 +385,39 @@ function handleDeleteEntry(entry: HistoricoEntry) {
   gap: 12px;
   padding: 64px 0;
   text-align: center;
+}
+
+.obra-details {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.body--dark .obra-details {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.obra-details__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.obra-details__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.obra-details__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--q-primary);
+  opacity: 0.8;
+}
+
+.obra-details__value {
+  font-size: 13px;
+  font-weight: 500;
 }
 </style>
