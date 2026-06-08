@@ -1,7 +1,12 @@
 /**
  * Histórico de consumidores por distrital.
- * Armazena automaticamente no IndexedDB do navegador — sem diálogos, sem permissões.
- * Oferece exportação como JSON para backup em arquivo quando necessário.
+ *
+ * Estratégia dupla:
+ *  1. IndexedDB  — leitura rápida no app, sempre disponível.
+ *  2. Arquivo em Documentos — persistência real na máquina do usuário.
+ *     • 1ª vez: abre seletor já em Documentos (usuário clica "Selecionar pasta").
+ *     • Sessões seguintes: pequeno aviso do Chrome "Permitir editar arquivos?" → Permitir.
+ *     • Dentro da mesma sessão: salva silenciosamente, sem nenhum diálogo.
  */
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
@@ -34,107 +39,212 @@ export interface HistoricoEntry {
 // ─── IndexedDB ────────────────────────────────────────────────────────────────
 
 const IDB_DB_NAME = 'cgb-formularios';
-const IDB_STORE_NAME = 'historico';
-const IDB_VERSION = 2; // versão 2: migra de file-handles para historico
+const IDB_HISTORICO_STORE = 'historico';
+const IDB_HANDLES_STORE = 'dir-handles';
+const IDB_HANDLE_KEY = 'documentos-dir';
+const IDB_VERSION = 3;
 
 let _db: IDBDatabase | null = null;
 
 function openIDB(): Promise<IDBDatabase> {
   if (_db) return Promise.resolve(_db);
-
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(IDB_DB_NAME, IDB_VERSION);
-
     req.onupgradeneeded = (event) => {
       const db = req.result;
-      // Cria a store de histórico se não existir
-      if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
-        // keyPath composto: distrital + id
-        db.createObjectStore(IDB_STORE_NAME, { keyPath: ['distrital', 'id'] });
+      if (!db.objectStoreNames.contains(IDB_HISTORICO_STORE)) {
+        db.createObjectStore(IDB_HISTORICO_STORE, { keyPath: ['distrital', 'id'] });
       }
-      // Remove store antiga de handles se existir (migração da versão 1)
-      if (event.oldVersion < 2 && db.objectStoreNames.contains('file-handles')) {
-        db.deleteObjectStore('file-handles');
+      if (!db.objectStoreNames.contains(IDB_HANDLES_STORE)) {
+        db.createObjectStore(IDB_HANDLES_STORE);
+      }
+      // Remove stores antigas se existirem (migração)
+      if (event.oldVersion < 3) {
+        if (db.objectStoreNames.contains('file-handles')) {
+          db.deleteObjectStore('file-handles');
+        }
       }
     };
-
-    req.onsuccess = () => {
-      _db = req.result;
-      resolve(_db);
-    };
+    req.onsuccess = () => { _db = req.result; resolve(_db); };
     req.onerror = () => reject(req.error);
   });
+}
+
+// ─── IndexedDB: histórico ─────────────────────────────────────────────────────
+
+async function idbPutEntry(entry: HistoricoEntry): Promise<void> {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_HISTORICO_STORE, 'readwrite');
+    tx.objectStore(IDB_HISTORICO_STORE).put(entry);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGetEntries(distrital: DistritalCode): Promise<HistoricoEntry[]> {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_HISTORICO_STORE, 'readonly');
+    const range = IDBKeyRange.bound([distrital, ''], [distrital, '￿']);
+    const req = tx.objectStore(IDB_HISTORICO_STORE).getAll(range);
+    req.onsuccess = () =>
+      resolve((req.result as HistoricoEntry[]).sort((a, b) => b.id.localeCompare(a.id)));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDeleteEntry(distrital: DistritalCode, id: string): Promise<void> {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_HISTORICO_STORE, 'readwrite');
+    tx.objectStore(IDB_HISTORICO_STORE).delete([distrital, id]);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ─── IndexedDB: handle de diretório ──────────────────────────────────────────
+
+async function idbSaveHandle(handle: FileSystemDirectoryHandle): Promise<void> {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_HANDLES_STORE, 'readwrite');
+    tx.objectStore(IDB_HANDLES_STORE).put(handle, IDB_HANDLE_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbLoadHandle(): Promise<FileSystemDirectoryHandle | null> {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_HANDLES_STORE, 'readonly');
+    const req = tx.objectStore(IDB_HANDLES_STORE).get(IDB_HANDLE_KEY);
+    req.onsuccess = () =>
+      resolve((req.result as FileSystemDirectoryHandle | undefined) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ─── File System Access API — pasta Documentos ───────────────────────────────
+
+let _dirHandle: FileSystemDirectoryHandle | null = null;
+
+async function ensurePermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
+  const opts = { mode: 'readwrite' } as FileSystemHandlePermissionDescriptor;
+  if ((await handle.queryPermission(opts)) === 'granted') return true;
+  return (await handle.requestPermission(opts)) === 'granted';
+}
+
+/**
+ * Retorna o handle da pasta Documentos.
+ * - Na 1ª vez: abre o seletor já em Documentos.
+ * - Nas demais: restaura do IndexedDB e re-pede permissão se necessário.
+ */
+export async function getDirHandle(): Promise<FileSystemDirectoryHandle> {
+  // Cache em memória (mesma sessão, já autorizado)
+  if (_dirHandle && (await ensurePermission(_dirHandle))) return _dirHandle;
+
+  // Tenta restaurar do IndexedDB
+  const saved = await idbLoadHandle();
+  if (saved && (await ensurePermission(saved))) {
+    _dirHandle = saved;
+    return saved;
+  }
+
+  // Primeira vez: abre o seletor de pasta em Documentos
+  const handle = await window.showDirectoryPicker({
+    mode: 'readwrite',
+    startIn: 'documents',
+  });
+  await idbSaveHandle(handle);
+  _dirHandle = handle;
+  return handle;
+}
+
+/** Escreve (ou atualiza) o arquivo JSON da distrital na pasta configurada. */
+async function writeDistritalFile(
+  dir: FileSystemDirectoryHandle,
+  distrital: DistritalCode,
+  entries: HistoricoEntry[],
+): Promise<void> {
+  const fh = await dir.getFileHandle(`consumidores-${distrital}.json`, { create: true });
+  const writable = await fh.createWritable();
+  await writable.write(JSON.stringify(entries, null, 2));
+  await writable.close();
+}
+
+async function readDistritalFile(
+  dir: FileSystemDirectoryHandle,
+  distrital: DistritalCode,
+): Promise<HistoricoEntry[]> {
+  try {
+    const fh = await dir.getFileHandle(`consumidores-${distrital}.json`);
+    const text = await (await fh.getFile()).text();
+    const parsed = JSON.parse(text) as unknown;
+    return Array.isArray(parsed) ? (parsed as HistoricoEntry[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 // ─── API pública ──────────────────────────────────────────────────────────────
 
-/** Salva uma entrada no histórico (sem nenhum diálogo). */
+/**
+ * Salva uma entrada no histórico.
+ * Sempre grava no IndexedDB (silencioso).
+ * Tenta também gravar no arquivo em Documentos.
+ */
 export async function appendHistoricoEntry(entry: HistoricoEntry): Promise<void> {
-  const db = await openIDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
-    tx.objectStore(IDB_STORE_NAME).put(entry);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  // 1. IndexedDB — sempre, sem falha
+  await idbPutEntry(entry);
+
+  // 2. Arquivo em Documentos — tenta obter o handle
+  try {
+    const dir = await getDirHandle();
+    const existing = await readDistritalFile(dir, entry.distrital);
+    // Substitui se já existe entrada com mesmo id, senão acrescenta
+    const updated = [...existing.filter((e) => e.id !== entry.id), entry];
+    await writeDistritalFile(dir, entry.distrital, updated);
+  } catch (err) {
+    // Se o usuário cancelou o seletor ou negou permissão, apenas ignora
+    if (err instanceof DOMException && err.name === 'AbortError') return;
+    console.warn('Histórico salvo no IndexedDB, mas falhou ao gravar o arquivo:', err);
+  }
 }
 
-/** Retorna todos os registros de uma distrital, do mais recente ao mais antigo. */
+/** Lê todos os registros de uma distrital do IndexedDB (leitura rápida no app). */
 export async function loadHistoricoEntries(
   distrital: DistritalCode,
 ): Promise<HistoricoEntry[]> {
-  const db = await openIDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_NAME, 'readonly');
-    const store = tx.objectStore(IDB_STORE_NAME);
-    // IDBKeyRange para buscar todos com distrital = X
-    const range = IDBKeyRange.bound([distrital, ''], [distrital, '￿']);
-    const req = store.getAll(range);
-    req.onsuccess = () => {
-      const entries = (req.result as HistoricoEntry[]).sort(
-        (a, b) => b.id.localeCompare(a.id), // mais recente primeiro
-      );
-      resolve(entries);
-    };
-    req.onerror = () => reject(req.error);
-  });
+  return idbGetEntries(distrital);
 }
 
-/** Remove um registro pelo id. */
+/** Remove um registro do IndexedDB e do arquivo em Documentos. */
 export async function deleteHistoricoEntry(
   distrital: DistritalCode,
   id: string,
 ): Promise<void> {
-  const db = await openIDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
-    tx.objectStore(IDB_STORE_NAME).delete([distrital, id]);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  await idbDeleteEntry(distrital, id);
+
+  try {
+    const dir = await getDirHandle();
+    const entries = await readDistritalFile(dir, distrital);
+    await writeDistritalFile(dir, distrital, entries.filter((e) => e.id !== id));
+  } catch {
+    // silencioso
+  }
 }
 
-/** Exporta todos os registros de uma distrital como download de arquivo JSON. */
+/** Exporta o histórico da distrital como download de arquivo JSON (backup manual). */
 export async function exportHistoricoAsJson(distrital: DistritalCode): Promise<void> {
-  const entries = await loadHistoricoEntries(distrital);
-  const json = JSON.stringify(entries, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
+  const entries = await idbGetEntries(distrital);
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = `consumidores-${distrital}.json`;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-/** Retorna o total de registros salvos de uma distrital (rápido, sem carregar tudo). */
-export async function countHistoricoEntries(distrital: DistritalCode): Promise<number> {
-  const db = await openIDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_NAME, 'readonly');
-    const range = IDBKeyRange.bound([distrital, ''], [distrital, '￿']);
-    const req = tx.objectStore(IDB_STORE_NAME).count(range);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
 }
