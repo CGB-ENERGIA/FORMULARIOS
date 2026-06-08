@@ -89,7 +89,7 @@
                 hide-bottom-space
               />
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
               <q-input
                 v-model="obra.elementoPep"
                 label="Elemento PEP *"
@@ -98,6 +98,17 @@
                 hide-bottom-space
                 :error="obraFieldHasError('elementoPep')"
                 :error-message="obraFieldError('elementoPep') ?? undefined"
+              />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-input
+                v-model="obra.nota"
+                label="Nota *"
+                outlined
+                dense
+                hide-bottom-space
+                :error="obraFieldHasError('nota')"
+                :error-message="obraFieldError('nota') ?? undefined"
               />
             </div>
             <div class="col-12 col-md-6">
@@ -492,6 +503,7 @@ async function salvarHistorico(): Promise<void> {
     distrital: distrital.value as DistritalCode,
     descricaoObra: obra.value.descricaoObra,
     elementoPep: obra.value.elementoPep,
+    nota: obra.value.nota,
     dataConclusao: obra.value.dataConclusao,
     municipio: obra.value.municipio,
     localidade: obra.value.localidade,

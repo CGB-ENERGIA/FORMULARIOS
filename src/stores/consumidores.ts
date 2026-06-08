@@ -11,6 +11,7 @@ export interface ObraInfo {
   descricaoObra: string;
   fornecedor: typeof FORNECEDOR_FIXO;
   elementoPep: string;
+  nota: string;
   dataConclusao: string;
   dataEnergizacao: string;
   tecObra: typeof TEC_OBRA_FIXO;
@@ -54,6 +55,7 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
     descricaoObra: '',
     fornecedor: FORNECEDOR_FIXO,
     elementoPep: '',
+    nota: '',
     dataConclusao: '',
     dataEnergizacao: '',
     tecObra: TEC_OBRA_FIXO,
@@ -104,6 +106,7 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
       descricaoObra: '',
       fornecedor: FORNECEDOR_FIXO,
       elementoPep: '',
+      nota: '',
       dataConclusao: '',
       dataEnergizacao: '',
       tecObra: TEC_OBRA_FIXO,

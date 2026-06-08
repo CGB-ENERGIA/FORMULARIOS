@@ -26,6 +26,7 @@ export interface HistoricoEntry {
   distrital: DistritalCode;
   descricaoObra: string;
   elementoPep: string;
+  nota: string;
   dataConclusao: string;
   municipio: string;
   localidade: string;
