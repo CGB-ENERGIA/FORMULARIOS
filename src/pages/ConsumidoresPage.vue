@@ -317,7 +317,12 @@
                   <q-radio v-model="props.row.tipoLigacao" :val="tipo.value" dense color="primary" />
                 </q-td>
 
-                <q-td v-for="pad in padroes" :key="'pd-' + pad.value" class="text-center">
+                <q-td
+                  v-for="(pad, padIdx) in padroes"
+                  :key="'pd-' + pad.value"
+                  class="text-center"
+                  :class="padraoCellClass(props.row, padIdx)"
+                >
                   <q-radio v-model="props.row.padrao" :val="pad.value" dense color="primary" />
                 </q-td>
 
@@ -378,6 +383,7 @@ import {
   applyTipoLigacaoFromMedidor,
   getMedidorFieldError,
   validateConsumidoresParaExportacao,
+  consumidorComDados,
 } from 'src/utils/consumidor-helpers';
 import { getObraFieldError, validateObraParaExportacao } from 'src/utils/obra-helpers';
 import {
@@ -437,6 +443,19 @@ const padroes = [
   { label: '7M', value: '7M' as const },
   { label: 'CPP', value: 'CPP' as const },
 ];
+
+function padraoPendente(row: (typeof consumidores.value)[number]): boolean {
+  return obraValidacaoAtiva.value && consumidorComDados(row) && !row.padrao;
+}
+
+function padraoCellClass(row: (typeof consumidores.value)[number], idx: number) {
+  if (!padraoPendente(row)) return '';
+  return [
+    'padrao-error',
+    idx === 0 ? 'padrao-error--first' : '',
+    idx === padroes.length - 1 ? 'padrao-error--last' : '',
+  ];
+}
 
 const columns: QTableColumn[] = [{ name: 'id', label: 'Nº', field: 'id' }];
 
@@ -580,5 +599,20 @@ function handleReset() {
   margin-top: 12px;
   font-size: 13px;
   color: var(--q-color-warning, #f59e0b);
+}
+
+/* Destaque vermelho nas células de PADRÃO sem preenchimento */
+.padrao-error {
+  background: rgba(220, 38, 38, 0.07) !important;
+  border-top: 1.5px solid rgba(220, 38, 38, 0.55) !important;
+  border-bottom: 1.5px solid rgba(220, 38, 38, 0.55) !important;
+}
+
+.padrao-error--first {
+  border-left: 1.5px solid rgba(220, 38, 38, 0.55) !important;
+}
+
+.padrao-error--last {
+  border-right: 1.5px solid rgba(220, 38, 38, 0.55) !important;
 }
 </style>
