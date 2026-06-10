@@ -31,99 +31,6 @@
         </div>
       </div>
 
-      <!-- ── Informações da Obra ─────────────────────────────────────────────── -->
-      <q-card flat class="premium-card q-mb-md">
-        <div class="premium-card__header">
-          <div class="premium-card__header-title">
-            <div class="premium-card__header-icon">
-              <q-icon name="forest" size="22px" />
-            </div>
-            Informações da Obra
-          </div>
-        </div>
-        <q-card-section class="premium-card__body">
-          <div class="row q-col-gutter-md">
-
-            <div class="col-12 col-md-4">
-              <q-select
-                v-model="obra.regional"
-                :options="REGIONAIS"
-                label="Regional *"
-                outlined dense emit-value map-options hide-bottom-space
-                :error="validacaoAtiva && !obra.regional"
-                error-message="Regional é obrigatória."
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-select
-                v-model="obra.contrato"
-                :options="CONTRATOS"
-                label="Contrato *"
-                outlined dense emit-value map-options hide-bottom-space
-                :error="validacaoAtiva && !obra.contrato"
-                error-message="Contrato é obrigatório."
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-select
-                v-model="obra.fornecedor"
-                :options="FORNECEDORES"
-                label="Fornecedor *"
-                outlined dense emit-value map-options hide-bottom-space
-                :error="validacaoAtiva && !obra.fornecedor"
-                error-message="Fornecedor é obrigatório."
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-select
-                v-model="obra.distribuidora"
-                :options="DISTRIBUIDORAS"
-                label="Distribuidora *"
-                outlined dense emit-value map-options hide-bottom-space
-                :error="validacaoAtiva && !obra.distribuidora"
-                error-message="Distribuidora é obrigatória."
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-select
-                v-model="obra.periodoMedicao"
-                :options="PERIODOS_MEDICAO"
-                label="Período de Medição *"
-                outlined dense emit-value map-options hide-bottom-space
-                :error="validacaoAtiva && !obra.periodoMedicao"
-                error-message="Período é obrigatório."
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-select
-                v-model="obra.equipe"
-                :options="EQUIPES"
-                label="Equipe *"
-                outlined dense emit-value map-options hide-bottom-space
-                :error="validacaoAtiva && !obra.equipe"
-                error-message="Equipe é obrigatória."
-              />
-            </div>
-
-            <div class="col-12 col-md-4">
-              <q-input
-                v-model="obra.elementoPep"
-                label="Elemento PEP *"
-                outlined dense hide-bottom-space
-                :error="validacaoAtiva && !obra.elementoPep"
-                error-message="Elemento PEP é obrigatório."
-              />
-            </div>
-
-          </div>
-        </q-card-section>
-      </q-card>
-
       <!-- ── Tabela de serviços ──────────────────────────────────────────────── -->
       <q-card flat class="premium-card">
         <div class="premium-card__header">
@@ -264,18 +171,14 @@
 import { ref, computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
-import { usePodaStore } from 'src/stores/poda';
-import {
-  REGIONAIS, CONTRATOS, FORNECEDORES, DISTRIBUIDORAS, EQUIPES, PERIODOS_MEDICAO,
-  servicoPreenchido,
-} from 'src/stores/poda';
+import { usePodaStore, servicoPreenchido } from 'src/stores/poda';
 import type { PodaServico } from 'src/stores/poda';
 import { exportPodaToExcel } from 'src/utils/poda-excel';
 import { exportPodaToPdf } from 'src/utils/poda-pdf';
 
 const $q = useQuasar();
 const store = usePodaStore();
-const { obra, servicos } = storeToRefs(store);
+const { servicos } = storeToRefs(store);
 const { addServico, removeServico, resetForm } = store;
 
 const validacaoAtiva = ref(false);
@@ -306,32 +209,14 @@ function handleFotoChange(event: Event, servico: PodaServico, tipo: 'inicio' | '
   (event.target as HTMLInputElement).value = '';
 }
 
-// ── Validação do cabeçalho ────────────────────────────────────────────────────
-function validarObra(): string[] {
-  const errors: string[] = [];
-  if (!obra.value.regional)       errors.push('Regional é obrigatória.');
-  if (!obra.value.contrato)       errors.push('Contrato é obrigatório.');
-  if (!obra.value.fornecedor)     errors.push('Fornecedor é obrigatório.');
-  if (!obra.value.distribuidora)  errors.push('Distribuidora é obrigatória.');
-  if (!obra.value.periodoMedicao) errors.push('Período de Medição é obrigatório.');
-  if (!obra.value.equipe)         errors.push('Equipe é obrigatória.');
-  if (!obra.value.elementoPep)    errors.push('Elemento PEP é obrigatório.');
-  return errors;
-}
-
 function ensureExportavel(): boolean {
   validacaoAtiva.value = true;
-  const errors = validarObra();
   if (preenchidosCount.value === 0) {
-    errors.push('Preencha ao menos um serviço antes de exportar.');
-  }
-  if (errors.length > 0) {
     $q.notify({
       type: 'negative',
       icon: 'warning',
-      message: errors.join('\n'),
-      multiLine: errors.length > 1,
-      timeout: 8000,
+      message: 'Preencha ao menos um serviço antes de exportar.',
+      timeout: 5000,
     });
     return false;
   }
@@ -343,7 +228,7 @@ async function handleExportExcel() {
   if (!ensureExportavel()) return;
   const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Excel…', timeout: 0 });
   try {
-    const fileName = await exportPodaToExcel(obra.value, servicos.value);
+    const fileName = await exportPodaToExcel(servicos.value);
     dismiss();
     $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
   } catch (error) {
@@ -356,7 +241,7 @@ async function handleExportPdf() {
   if (!ensureExportavel()) return;
   const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando PDF…', timeout: 0 });
   try {
-    const fileName = await exportPodaToPdf(obra.value, servicos.value);
+    const fileName = await exportPodaToPdf(servicos.value);
     dismiss();
     $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
   } catch (error) {
