@@ -8,21 +8,17 @@
         </div>
         <h1 class="page-header__title">Relatório de Poda</h1>
         <p class="page-header__subtitle">
-          Preencha os dados da obra, adicione os serviços com fotos de início e fim e exporte para Excel ou PDF.
+          Registre as evidências fotográficas de início e fim de cada serviço e exporte para Excel ou PDF.
         </p>
       </header>
 
       <!-- ── Barra de ações ──────────────────────────────────────────────────── -->
-      <div class="action-bar q-mb-md">
-        <div>
-          <div class="action-bar__title">Serviços</div>
-          <div class="stat-chip q-mt-sm">
-            <q-icon name="check_circle" size="18px" color="primary" />
-            <strong>{{ preenchidosCount }}</strong> preenchido(s)
-          </div>
+      <div class="action-bar q-mb-lg">
+        <div class="stat-chip">
+          <q-icon name="check_circle" size="18px" color="primary" />
+          <strong>{{ preenchidosCount }}</strong> serviço(s) com foto
         </div>
         <div class="action-bar__actions">
-          <q-btn outline color="primary" icon="add" label="Adicionar linha" no-caps @click="addServico" />
           <q-btn unelevated icon="download" label="Exportar Excel" class="action-btn--excel" no-caps @click="handleExportExcel" />
           <q-btn unelevated icon="picture_as_pdf" label="Gerar PDF" class="action-btn--pdf" no-caps @click="handleExportPdf" />
           <q-btn outline color="negative" icon="restart_alt" no-caps @click="handleReset">
@@ -31,117 +27,117 @@
         </div>
       </div>
 
-      <!-- ── Tabela de serviços ──────────────────────────────────────────────── -->
-      <q-card flat class="premium-card">
-        <div class="premium-card__header">
-          <div class="premium-card__header-title">
-            <div class="premium-card__header-icon">
-              <q-icon name="photo_library" size="22px" />
+      <!-- ── Grid de serviços ───────────────────────────────────────────────── -->
+      <div class="servicos-grid">
+
+        <div
+          v-for="(servico, idx) in servicos"
+          :key="servico.id"
+          class="servico-card"
+          :class="{ 'servico-card--ok': servicoPreenchido(servico) }"
+        >
+          <!-- Cabeçalho do card -->
+          <div class="servico-card__header">
+            <div class="servico-card__header-left">
+              <span class="servico-card__badge">{{ servico.id }}</span>
+              <span class="servico-card__title">Serviço {{ servico.id }}</span>
+              <q-icon
+                v-if="servicoPreenchido(servico)"
+                name="check_circle"
+                size="16px"
+                color="positive"
+                class="q-ml-xs"
+              />
             </div>
-            Serviços / Evidências Fotográficas
+            <q-btn
+              flat round dense icon="delete_outline" color="negative" size="sm"
+              :disable="servicos.length <= 1"
+              @click="removeServico(idx)"
+            >
+              <q-tooltip>Remover serviço</q-tooltip>
+            </q-btn>
+          </div>
+
+          <!-- Área de fotos -->
+          <div class="servico-card__fotos">
+
+            <!-- Foto Início -->
+            <div class="foto-slot">
+              <div class="foto-slot__label">
+                <q-icon name="play_circle_outline" size="14px" />
+                Registro Início dos Trabalhos
+              </div>
+              <div
+                class="foto-cell"
+                tabindex="0"
+                @click="triggerFoto(idx, 'inicio')"
+                @paste.stop="(e) => handlePaste(e, servico, 'inicio')"
+              >
+                <img v-if="servico.fotoInicio" :src="servico.fotoInicio" class="foto-thumb" />
+                <div v-else class="foto-placeholder">
+                  <q-icon name="add_photo_alternate" size="36px" color="grey-5" />
+                  <span class="foto-placeholder__text">Clique para adicionar</span>
+                  <span class="foto-placeholder__hint">ou pressione Ctrl+V para colar</span>
+                </div>
+                <q-btn
+                  v-if="servico.fotoInicio"
+                  flat round dense icon="close" size="xs" color="white"
+                  class="foto-remove"
+                  @click.stop="servico.fotoInicio = ''"
+                />
+              </div>
+              <input
+                :ref="(el) => setFotoRef(el, idx, 'inicio')"
+                type="file" accept="image/*" style="display:none"
+                @change="(e) => handleFotoChange(e, servico, 'inicio')"
+              />
+            </div>
+
+            <!-- Divisor -->
+            <div class="foto-slot__divider" />
+
+            <!-- Foto Fim -->
+            <div class="foto-slot">
+              <div class="foto-slot__label">
+                <q-icon name="stop_circle" size="14px" />
+                Registro do Fim dos Trabalhos
+              </div>
+              <div
+                class="foto-cell"
+                tabindex="0"
+                @click="triggerFoto(idx, 'fim')"
+                @paste.stop="(e) => handlePaste(e, servico, 'fim')"
+              >
+                <img v-if="servico.fotoFim" :src="servico.fotoFim" class="foto-thumb" />
+                <div v-else class="foto-placeholder">
+                  <q-icon name="add_photo_alternate" size="36px" color="grey-5" />
+                  <span class="foto-placeholder__text">Clique para adicionar</span>
+                  <span class="foto-placeholder__hint">ou pressione Ctrl+V para colar</span>
+                </div>
+                <q-btn
+                  v-if="servico.fotoFim"
+                  flat round dense icon="close" size="xs" color="white"
+                  class="foto-remove"
+                  @click.stop="servico.fotoFim = ''"
+                />
+              </div>
+              <input
+                :ref="(el) => setFotoRef(el, idx, 'fim')"
+                type="file" accept="image/*" style="display:none"
+                @change="(e) => handleFotoChange(e, servico, 'fim')"
+              />
+            </div>
+
           </div>
         </div>
-        <q-card-section class="q-pa-0">
-          <div class="poda-table-wrap">
-            <table class="poda-table">
-              <thead>
-                <tr>
-                  <th class="poda-table__th poda-table__th--num">Nº</th>
-                  <th class="poda-table__th poda-table__th--foto">Foto Início</th>
-                  <th class="poda-table__th poda-table__th--foto">Foto Fim</th>
-                  <th class="poda-table__th poda-table__th--actions"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(servico, idx) in servicos" :key="servico.id" class="poda-table__row">
 
-                  <!-- Nº -->
-                  <td class="poda-table__td poda-table__td--num">{{ servico.id }}</td>
+        <!-- Botão adicionar serviço -->
+        <button class="servicos-add-btn" @click="addServico">
+          <q-icon name="add_circle_outline" size="20px" />
+          Adicionar serviço
+        </button>
 
-                  <!-- Foto Início -->
-                  <td class="poda-table__td poda-table__td--foto">
-                    <div
-                      class="foto-cell"
-                      tabindex="0"
-                      @click="triggerFoto(idx, 'inicio')"
-                      @paste.stop="(e) => handlePaste(e, servico, 'inicio')"
-                    >
-                      <img v-if="servico.fotoInicio" :src="servico.fotoInicio" class="foto-thumb" />
-                      <div v-else class="foto-placeholder">
-                        <q-icon name="add_photo_alternate" size="24px" color="grey-5" />
-                        <span>Clique ou cole</span>
-                      </div>
-                      <q-btn
-                        v-if="servico.fotoInicio"
-                        flat round dense icon="close" size="xs" color="negative"
-                        class="foto-remove"
-                        @click.stop="servico.fotoInicio = ''"
-                      />
-                    </div>
-                    <input
-                      :ref="(el) => setFotoRef(el, idx, 'inicio')"
-                      type="file"
-                      accept="image/*"
-                      style="display:none"
-                      @change="(e) => handleFotoChange(e, servico, 'inicio')"
-                    />
-                  </td>
-
-                  <!-- Foto Fim -->
-                  <td class="poda-table__td poda-table__td--foto">
-                    <div
-                      class="foto-cell"
-                      tabindex="0"
-                      @click="triggerFoto(idx, 'fim')"
-                      @paste.stop="(e) => handlePaste(e, servico, 'fim')"
-                    >
-                      <img v-if="servico.fotoFim" :src="servico.fotoFim" class="foto-thumb" />
-                      <div v-else class="foto-placeholder">
-                        <q-icon name="add_photo_alternate" size="24px" color="grey-5" />
-                        <span>Clique ou cole</span>
-                      </div>
-                      <q-btn
-                        v-if="servico.fotoFim"
-                        flat round dense icon="close" size="xs" color="negative"
-                        class="foto-remove"
-                        @click.stop="servico.fotoFim = ''"
-                      />
-                    </div>
-                    <input
-                      :ref="(el) => setFotoRef(el, idx, 'fim')"
-                      type="file"
-                      accept="image/*"
-                      style="display:none"
-                      @change="(e) => handleFotoChange(e, servico, 'fim')"
-                    />
-                  </td>
-
-                  <!-- Ações -->
-                  <td class="poda-table__td poda-table__td--actions">
-                    <q-btn
-                      flat round dense icon="delete_outline" color="negative" size="sm"
-                      :disable="servicos.length <= 1"
-                      @click="removeServico(idx)"
-                    >
-                      <q-tooltip>Remover linha</q-tooltip>
-                    </q-btn>
-                  </td>
-
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="4" class="poda-table__add-row" @click="addServico">
-                    <q-icon name="add_circle_outline" size="16px" />
-                    Adicionar linha
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </q-card-section>
-      </q-card>
-
+      </div>
     </div>
   </q-page>
 </template>
@@ -175,6 +171,16 @@ function triggerFoto(idx: number, tipo: 'inicio' | 'fim') {
   fotoRefs[`${idx}-${tipo}`]?.click();
 }
 
+function readFileAsDataUrl(file: File, servico: PodaServico, tipo: 'inicio' | 'fim') {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target?.result as string;
+    if (tipo === 'inicio') servico.fotoInicio = result;
+    else servico.fotoFim = result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function handleFotoChange(event: Event, servico: PodaServico, tipo: 'inicio' | 'fim') {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
@@ -195,23 +201,13 @@ function handlePaste(event: ClipboardEvent, servico: PodaServico, tipo: 'inicio'
   }
 }
 
-function readFileAsDataUrl(file: File, servico: PodaServico, tipo: 'inicio' | 'fim') {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const result = e.target?.result as string;
-    if (tipo === 'inicio') servico.fotoInicio = result;
-    else servico.fotoFim = result;
-  };
-  reader.readAsDataURL(file);
-}
-
 function ensureExportavel(): boolean {
   validacaoAtiva.value = true;
   if (preenchidosCount.value === 0) {
     $q.notify({
       type: 'negative',
-      icon: 'warning',
-      message: 'Preencha ao menos um serviço antes de exportar.',
+      icon: 'photo_camera',
+      message: 'Adicione pelo menos 1 foto antes de exportar.',
       timeout: 5000,
     });
     return false;
@@ -249,7 +245,7 @@ async function handleExportPdf() {
 function handleReset() {
   $q.dialog({
     title: 'Limpar formulário',
-    message: 'Deseja apagar todos os dados e fotos preenchidos?',
+    message: 'Deseja apagar todos os serviços e fotos preenchidos?',
     cancel: true,
     persistent: true,
   }).onOk(() => {
@@ -261,78 +257,132 @@ function handleReset() {
 </script>
 
 <style scoped>
-/* ── Tabela ──────────────────────────────────────────────────────────────── */
-.poda-table-wrap {
-  overflow-x: auto;
+/* ── Grid de serviços ────────────────────────────────────────────────────── */
+.servicos-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.poda-table {
-  width: 100%;
-  border-collapse: collapse;
+/* ── Card de serviço ─────────────────────────────────────────────────────── */
+.servico-card {
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--q-color-surface, #fff);
+  transition: box-shadow 0.2s, border-color 0.2s;
 }
 
-.poda-table__th {
-  padding: 10px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  text-align: left;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
-  background: rgba(0, 0, 0, 0.02);
-  white-space: nowrap;
-}
-
-.body--dark .poda-table__th {
+.body--dark .servico-card {
   border-color: rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
 }
 
-.poda-table__th--num     { width: 40px; text-align: center; }
-.poda-table__th--foto    { width: 140px; text-align: center; }
-.poda-table__th--actions { width: 44px; }
-
-.poda-table__row:not(:last-child) .poda-table__td {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+.servico-card--ok {
+  border-color: rgba(76, 175, 80, 0.35);
 }
 
-.body--dark .poda-table__row:not(:last-child) .poda-table__td {
+.body--dark .servico-card--ok {
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+/* Cabeçalho do card */
+.servico-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.body--dark .servico-card__header {
   border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
 }
 
-.poda-table__td {
-  padding: 6px 8px;
-  vertical-align: middle;
+.servico-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.poda-table__td--num {
-  text-align: center;
-  font-size: 12px;
+.servico-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--q-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.servico-card__title {
+  font-size: 13px;
   font-weight: 600;
-  color: var(--q-primary);
+  opacity: 0.8;
 }
 
-.poda-table__td--foto {
-  padding: 6px;
+/* Área de fotos */
+.servico-card__fotos {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  padding: 14px;
+  gap: 0;
 }
 
-.poda-table__td--actions {
-  text-align: center;
+.foto-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.foto-slot__divider {
+  width: 1px;
+  margin: 0 14px;
+  background: rgba(0, 0, 0, 0.07);
+  align-self: stretch;
+}
+
+.body--dark .foto-slot__divider {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.foto-slot__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.55;
 }
 
 /* ── Célula de foto ──────────────────────────────────────────────────────── */
 .foto-cell {
   position: relative;
-  width: 120px;
-  height: 90px;
-  border: 1.5px dashed rgba(0, 0, 0, 0.18);
-  border-radius: 6px;
+  width: 100%;
+  height: 200px;
+  border: 1.5px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
   cursor: pointer;
   overflow: hidden;
   transition: border-color 0.15s, background 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.body--dark .foto-cell {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .foto-cell:hover,
@@ -340,10 +390,6 @@ function handleReset() {
   border-color: var(--q-primary);
   background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.04);
   outline: none;
-}
-
-.body--dark .foto-cell {
-  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .foto-thumb {
@@ -357,47 +403,59 @@ function handleReset() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  color: var(--q-color-grey-5, #9e9e9e);
-  font-size: 10px;
+  gap: 6px;
+  pointer-events: none;
   user-select: none;
+}
+
+.foto-placeholder__text {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.5;
+}
+
+.foto-placeholder__hint {
+  font-size: 10.5px;
+  opacity: 0.35;
 }
 
 .foto-remove {
   position: absolute !important;
-  top: 3px;
-  right: 3px;
-  background: rgba(255, 255, 255, 0.85) !important;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px);
 }
 
-.body--dark .foto-remove {
-  background: rgba(30, 30, 30, 0.85) !important;
-}
-
-/* ── Rodapé "Adicionar linha" ────────────────────────────────────────────── */
-.poda-table__add-row {
-  padding: 10px 12px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 500;
+/* ── Botão adicionar serviço ─────────────────────────────────────────────── */
+.servicos-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  border: 1.5px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  background: transparent;
   color: var(--q-primary);
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  border-top: 1px dashed rgba(0, 0, 0, 0.1);
-  transition: background 0.15s;
-  display: table-cell;
-  user-select: none;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
 }
 
-.poda-table__add-row:hover {
+.servicos-add-btn:hover {
   background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.06);
+  border-color: var(--q-primary);
 }
 
-.poda-table__add-row .q-icon {
-  vertical-align: middle;
-  margin-right: 4px;
+.body--dark .servicos-add-btn {
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
-.body--dark .poda-table__add-row {
-  border-color: rgba(255, 255, 255, 0.1);
+.body--dark .servicos-add-btn:hover {
+  border-color: var(--q-primary);
 }
 </style>
