@@ -13,7 +13,7 @@ const MX       = 8;                        // margem horizontal
 const CONT_W   = PAGE_W - MX * 2;          // 194 mm
 const PHOTO_W  = (CONT_W - 4) / 2;        // ~95 mm por foto (gap 4 mm)
 const PHOTO_H  = PHOTO_W * (9.6 / 12.8);  // ~71 mm — proporção do template
-const SEC_H    = 6 + 6 + 5 + PHOTO_H + 4; // altura de uma seção (≈ 92 mm)
+const SEC_H    = 6 + 6 + PHOTO_H + 4;     // altura de uma seção (≈ 87 mm)
 
 // ── Cores ─────────────────────────────────────────────────────────────────────
 const LBLUE: [number, number, number] = [189, 215, 238];
@@ -112,19 +112,6 @@ function drawEvidencia(
   doc.text(`${regL}  REGISTRO INÍCIO DOS TRABALHOS`, MX + 2, y + 4);
   doc.text(`${regR}  REGISTRO DO FIM DOS TRABALHOS`, xR + 2, y + 4);
   y += 6;
-
-  // Linha REFERENCIA - SERV (data + referência)
-  const refLabel = `${servico.data || '—'}   |   ${servico.referencia || '—'}`;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(...GRAY);
-  doc.rect(MX, y, PHOTO_W, 5);
-  doc.rect(xR, y, PHOTO_W, 5);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text(refLabel, MX + PHOTO_W / 2, y + 3.3, { align: 'center' });
-  doc.text(refLabel, xR + PHOTO_W / 2, y + 3.3, { align: 'center' });
-  y += 5;
 
   // Área das fotos
   doc.setDrawColor(...GRAY);

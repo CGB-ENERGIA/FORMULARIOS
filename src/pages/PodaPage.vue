@@ -47,8 +47,6 @@
               <thead>
                 <tr>
                   <th class="poda-table__th poda-table__th--num">Nº</th>
-                  <th class="poda-table__th poda-table__th--data">Data</th>
-                  <th class="poda-table__th poda-table__th--ref">Referência</th>
                   <th class="poda-table__th poda-table__th--foto">Foto Início</th>
                   <th class="poda-table__th poda-table__th--foto">Foto Fim</th>
                   <th class="poda-table__th poda-table__th--actions"></th>
@@ -59,43 +57,6 @@
 
                   <!-- Nº -->
                   <td class="poda-table__td poda-table__td--num">{{ servico.id }}</td>
-
-                  <!-- Data -->
-                  <td class="poda-table__td">
-                    <q-input
-                      v-model="servico.data"
-                      outlined dense hide-bottom-space
-                      mask="##/##/####"
-                      placeholder="DD/MM/AAAA"
-                      class="poda-input"
-                    >
-                      <template #append>
-                        <q-icon name="event" size="16px" class="cursor-pointer">
-                          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                            <q-date
-                              :model-value="servico.data"
-                              mask="DD/MM/YYYY"
-                              @update:model-value="(v) => (servico.data = String(v ?? ''))"
-                            >
-                              <div class="row items-center justify-end">
-                                <q-btn v-close-popup label="Fechar" color="primary" flat no-caps />
-                              </div>
-                            </q-date>
-                          </q-popup-proxy>
-                        </q-icon>
-                      </template>
-                    </q-input>
-                  </td>
-
-                  <!-- Referência -->
-                  <td class="poda-table__td">
-                    <q-input
-                      v-model="servico.referencia"
-                      outlined dense hide-bottom-space
-                      placeholder="Ex: L65"
-                      class="poda-input"
-                    />
-                  </td>
 
                   <!-- Foto Início -->
                   <td class="poda-table__td poda-table__td--foto">
@@ -293,8 +254,6 @@ function handleReset() {
 }
 
 .poda-table__th--num     { width: 40px; text-align: center; }
-.poda-table__th--data    { width: 148px; }
-.poda-table__th--ref     { width: 120px; }
 .poda-table__th--foto    { width: 140px; text-align: center; }
 .poda-table__th--actions { width: 44px; }
 
@@ -324,12 +283,6 @@ function handleReset() {
 
 .poda-table__td--actions {
   text-align: center;
-}
-
-/* ── Input inline ────────────────────────────────────────────────────────── */
-.poda-input :deep(.q-field__control) {
-  min-height: 34px;
-  height: 34px;
 }
 
 /* ── Célula de foto ──────────────────────────────────────────────────────── */

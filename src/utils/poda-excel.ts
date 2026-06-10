@@ -12,21 +12,21 @@ export async function exportPodaToExcel(servicos: PodaServico[]): Promise<string
   const ws = wb.addWorksheet('PODA');
 
   // ── Título ───────────────────────────────────────────────────────────────────
-  ws.mergeCells('A1:E1');
+  ws.mergeCells('A1:C1');
   const title = ws.getCell('A1');
-  title.value = 'RELATÓRIO DE EVIDÊNCIAS DOS SERVIÇOS EXECUTADOS — PODA';
-  title.font = { bold: true, size: 13, color: { argb: 'FF1565C0' } };
+  title.value = 'RELATÓRIO DE EVIDÊNCIAS DOS SERVIÇOS EXECUTADOS';
+  title.font = { bold: true, size: 13, color: { argb: 'FF1F497D' } };
   title.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 24;
 
   // ── Cabeçalho da tabela ──────────────────────────────────────────────────────
-  const colHeaders = ['Nº', 'Data', 'Referência', 'Foto Início', 'Foto Fim'];
+  const colHeaders = ['Nº', 'Foto Início', 'Foto Fim'];
   colHeaders.forEach((h, i) => {
     const cell = ws.getCell(3, i + 1);
     cell.value = h;
     cell.font = { bold: true, size: 9 };
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } };
     cell.border = {
       top: { style: 'thin' }, bottom: { style: 'thin' },
       left: { style: 'thin' }, right: { style: 'thin' },
@@ -39,8 +39,6 @@ export async function exportPodaToExcel(servicos: PodaServico[]): Promise<string
     const r = 4 + i;
     const rowData = [
       s.id,
-      s.data,
-      s.referencia,
       s.fotoInicio ? '(foto anexada)' : '',
       s.fotoFim    ? '(foto anexada)' : '',
     ];
@@ -58,7 +56,7 @@ export async function exportPodaToExcel(servicos: PodaServico[]): Promise<string
   });
 
   ws.columns = [
-    { width: 6 }, { width: 14 }, { width: 20 }, { width: 18 }, { width: 18 },
+    { width: 6 }, { width: 20 }, { width: 20 },
   ];
 
   // ── Download ─────────────────────────────────────────────────────────────────

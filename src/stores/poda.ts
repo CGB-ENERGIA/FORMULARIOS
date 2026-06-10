@@ -3,18 +3,16 @@ import { ref } from 'vue';
 
 export interface PodaServico {
   id: number;
-  data: string;
-  referencia: string;
   fotoInicio: string; // base64 data URL ou ''
   fotoFim: string;    // base64 data URL ou ''
 }
 
 function createEmptyServico(id: number): PodaServico {
-  return { id, data: '', referencia: '', fotoInicio: '', fotoFim: '' };
+  return { id, fotoInicio: '', fotoFim: '' };
 }
 
 export function servicoPreenchido(s: PodaServico): boolean {
-  return !!(s.data || s.referencia || s.fotoInicio || s.fotoFim);
+  return !!(s.fotoInicio || s.fotoFim);
 }
 
 export const usePodaStore = defineStore('poda', () => {
