@@ -621,12 +621,27 @@ function getExportErrors(): string[] {
   return validateArrastoParaExportacao(obra.value, arrastoEmM.value);
 }
 
+function ensureFoto(): boolean {
+  const temFoto = evidencias.value.some((e) => e !== null);
+  if (!temFoto) {
+    $q.notify({
+      type: 'negative',
+      icon: 'photo_camera',
+      message: 'Adicione pelo menos 1 foto de evidência antes de exportar.',
+      timeout: 5000,
+    });
+    return false;
+  }
+  return true;
+}
+
 async function handleExport() {
   const errors = getExportErrors();
   if (errors.length > 0) {
     $q.notify({ type: 'negative', message: errors[0] });
     return;
   }
+  if (!ensureFoto()) return;
 
   try {
     const fileName = await exportArrastoToExcel(
@@ -656,6 +671,7 @@ async function handleExportPdf() {
     $q.notify({ type: 'negative', message: errors[0] });
     return;
   }
+  if (!ensureFoto()) return;
 
   try {
     const fileName = await exportArrastoToPdf(

@@ -832,6 +832,16 @@ function ensureExportavel(): boolean {
     notifyExportValidationErrors(errors);
     return false;
   }
+  const temFoto = evidencias.value.some((e) => e !== null);
+  if (!temFoto) {
+    $q.notify({
+      type: 'negative',
+      icon: 'photo_camera',
+      message: 'Adicione pelo menos 1 foto de evidência antes de exportar.',
+      timeout: 5000,
+    });
+    return false;
+  }
   return true;
 }
 
