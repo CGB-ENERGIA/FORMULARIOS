@@ -30,6 +30,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/HistoricoPage.vue'),
         meta: { title: 'HISTÓRICO' },
       },
+      {
+        path: 'poda',
+        component: () => import('pages/PodaPage.vue'),
+        meta: { title: 'PODA' },
+      },
     ],
   },
   {

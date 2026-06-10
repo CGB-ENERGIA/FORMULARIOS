@@ -46,6 +46,12 @@ export const navItems: NavItem[] = [
     route: '/arrasto',
   },
   {
+    title: 'PODA',
+    caption: 'Relatório de evidências',
+    icon: 'forest',
+    route: '/poda',
+  },
+  {
     title: 'EMERGENCIAL',
     caption: 'Acessar outro projeto',
     icon: 'open_in_new',
