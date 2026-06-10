@@ -61,31 +61,67 @@
           <!-- Área de fotos -->
           <div class="servico-card__fotos">
 
-            <!-- Foto Início -->
+            <!-- ── Foto Início ── -->
             <div class="foto-slot">
               <div class="foto-slot__label">
                 <q-icon name="play_circle_outline" size="14px" />
                 Registro Início dos Trabalhos
               </div>
+
+              <!-- Preenchida -->
               <div
-                class="foto-cell"
+                v-if="servico.fotoInicio"
+                class="evidencia-zone evidencia-zone--filled relative-position"
+                :class="cellClass(servico, 'inicio')"
                 tabindex="0"
-                @click="triggerFoto(idx, 'inicio')"
-                @paste.stop="(e) => handlePaste(e, servico, 'inicio')"
+                title="Arraste para outro campo ou cole com Ctrl+V"
+                @click="selectCell(servico, 'inicio', $event)"
+                @paste="(e) => handleZonePaste(e, servico, 'inicio')"
+                @dragover="handleDragOver(servico, 'inicio', $event)"
+                @drop="handleDrop(servico, 'inicio', $event)"
               >
-                <img v-if="servico.fotoInicio" :src="servico.fotoInicio" class="foto-thumb" />
-                <div v-else class="foto-placeholder">
-                  <q-icon name="add_photo_alternate" size="36px" color="grey-5" />
-                  <span class="foto-placeholder__text">Clique para adicionar</span>
-                  <span class="foto-placeholder__hint">ou pressione Ctrl+V para colar</span>
-                </div>
+                <img
+                  :src="servico.fotoInicio"
+                  draggable="true"
+                  class="evidencia-img evidencia-img--draggable"
+                  style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
+                  @dragstart="handleDragStart(servico, 'inicio', $event)"
+                  @dragend="handleDragEnd"
+                />
                 <q-btn
-                  v-if="servico.fotoInicio"
-                  flat round dense icon="close" size="xs" color="white"
-                  class="foto-remove"
+                  icon="close" round dense size="sm" color="negative"
+                  class="absolute-top-right q-ma-xs"
                   @click.stop="servico.fotoInicio = ''"
                 />
               </div>
+
+              <!-- Vazia -->
+              <div
+                v-else
+                class="evidencia-zone evidencia-zone--empty flex flex-center column"
+                :class="cellClass(servico, 'inicio')"
+                tabindex="0"
+                title="Selecione, cole com Ctrl+V ou solte uma imagem arrastada"
+                @click="selectCell(servico, 'inicio', $event)"
+                @paste="(e) => handleZonePaste(e, servico, 'inicio')"
+                @keydown.enter="triggerFoto(idx, 'inicio')"
+                @dragover="handleDragOver(servico, 'inicio', $event)"
+                @drop="handleDrop(servico, 'inicio', $event)"
+              >
+                <button
+                  type="button"
+                  class="evidencia-zone__upload-trigger"
+                  aria-label="Anexar imagem"
+                  @click.stop="triggerFoto(idx, 'inicio')"
+                >
+                  <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
+                  <span class="text-grey-6 text-caption">Clique para anexar</span>
+                </button>
+                <span class="evidencia-zone__paste-hint text-grey-6 text-caption">
+                  ou selecione, cole (Ctrl+V) ou arraste
+                </span>
+              </div>
+
               <input
                 :ref="(el) => setFotoRef(el, idx, 'inicio')"
                 type="file" accept="image/*" style="display:none"
@@ -96,31 +132,67 @@
             <!-- Divisor -->
             <div class="foto-slot__divider" />
 
-            <!-- Foto Fim -->
+            <!-- ── Foto Fim ── -->
             <div class="foto-slot">
               <div class="foto-slot__label">
                 <q-icon name="stop_circle" size="14px" />
                 Registro do Fim dos Trabalhos
               </div>
+
+              <!-- Preenchida -->
               <div
-                class="foto-cell"
+                v-if="servico.fotoFim"
+                class="evidencia-zone evidencia-zone--filled relative-position"
+                :class="cellClass(servico, 'fim')"
                 tabindex="0"
-                @click="triggerFoto(idx, 'fim')"
-                @paste.stop="(e) => handlePaste(e, servico, 'fim')"
+                title="Arraste para outro campo ou cole com Ctrl+V"
+                @click="selectCell(servico, 'fim', $event)"
+                @paste="(e) => handleZonePaste(e, servico, 'fim')"
+                @dragover="handleDragOver(servico, 'fim', $event)"
+                @drop="handleDrop(servico, 'fim', $event)"
               >
-                <img v-if="servico.fotoFim" :src="servico.fotoFim" class="foto-thumb" />
-                <div v-else class="foto-placeholder">
-                  <q-icon name="add_photo_alternate" size="36px" color="grey-5" />
-                  <span class="foto-placeholder__text">Clique para adicionar</span>
-                  <span class="foto-placeholder__hint">ou pressione Ctrl+V para colar</span>
-                </div>
+                <img
+                  :src="servico.fotoFim"
+                  draggable="true"
+                  class="evidencia-img evidencia-img--draggable"
+                  style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
+                  @dragstart="handleDragStart(servico, 'fim', $event)"
+                  @dragend="handleDragEnd"
+                />
                 <q-btn
-                  v-if="servico.fotoFim"
-                  flat round dense icon="close" size="xs" color="white"
-                  class="foto-remove"
+                  icon="close" round dense size="sm" color="negative"
+                  class="absolute-top-right q-ma-xs"
                   @click.stop="servico.fotoFim = ''"
                 />
               </div>
+
+              <!-- Vazia -->
+              <div
+                v-else
+                class="evidencia-zone evidencia-zone--empty flex flex-center column"
+                :class="cellClass(servico, 'fim')"
+                tabindex="0"
+                title="Selecione, cole com Ctrl+V ou solte uma imagem arrastada"
+                @click="selectCell(servico, 'fim', $event)"
+                @paste="(e) => handleZonePaste(e, servico, 'fim')"
+                @keydown.enter="triggerFoto(idx, 'fim')"
+                @dragover="handleDragOver(servico, 'fim', $event)"
+                @drop="handleDrop(servico, 'fim', $event)"
+              >
+                <button
+                  type="button"
+                  class="evidencia-zone__upload-trigger"
+                  aria-label="Anexar imagem"
+                  @click.stop="triggerFoto(idx, 'fim')"
+                >
+                  <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
+                  <span class="text-grey-6 text-caption">Clique para anexar</span>
+                </button>
+                <span class="evidencia-zone__paste-hint text-grey-6 text-caption">
+                  ou selecione, cole (Ctrl+V) ou arraste
+                </span>
+              </div>
+
               <input
                 :ref="(el) => setFotoRef(el, idx, 'fim')"
                 type="file" accept="image/*" style="display:none"
@@ -143,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
 import { usePodaStore, servicoPreenchido } from 'src/stores/poda';
@@ -157,50 +229,189 @@ const { servicos } = storeToRefs(store);
 const { addServico, removeServico, resetForm } = store;
 
 const validacaoAtiva = ref(false);
-
 const preenchidosCount = computed(() => servicos.value.filter(servicoPreenchido).length);
 
-// ── Refs dinâmicos para file inputs ──────────────────────────────────────────
-const fotoRefs: Record<string, HTMLInputElement | null> = {};
+// ── Chave de célula ───────────────────────────────────────────────────────────
+type Tipo = 'inicio' | 'fim';
+interface CellKey { id: number; tipo: Tipo }
 
-function setFotoRef(el: unknown, idx: number, tipo: 'inicio' | 'fim') {
-  fotoRefs[`${idx}-${tipo}`] = el as HTMLInputElement | null;
+const selectedKey   = ref<CellKey | null>(null);
+const draggedKey    = ref<CellKey | null>(null);
+const dropTargetKey = ref<CellKey | null>(null);
+
+function keysEqual(a: CellKey | null, b: CellKey | null) {
+  return !!a && !!b && a.id === b.id && a.tipo === b.tipo;
 }
 
-function triggerFoto(idx: number, tipo: 'inicio' | 'fim') {
+function cellClass(s: PodaServico, tipo: Tipo) {
+  const k = { id: s.id, tipo };
+  return {
+    'evidencia-zone--selected':    keysEqual(selectedKey.value, k),
+    'evidencia-zone--drop-target': keysEqual(dropTargetKey.value, k),
+    'evidencia-zone--dragging':    keysEqual(draggedKey.value, k),
+  };
+}
+
+function getPhoto(s: PodaServico, tipo: Tipo) {
+  return tipo === 'inicio' ? s.fotoInicio : s.fotoFim;
+}
+function setPhoto(s: PodaServico, tipo: Tipo, v: string) {
+  if (tipo === 'inicio') s.fotoInicio = v;
+  else s.fotoFim = v;
+}
+
+// ── Seleção ───────────────────────────────────────────────────────────────────
+function selectCell(s: PodaServico, tipo: Tipo, event?: Event) {
+  selectedKey.value = { id: s.id, tipo };
+  const t = event?.currentTarget;
+  if (t instanceof HTMLElement) t.focus();
+}
+
+// ── File inputs dinâmicos ─────────────────────────────────────────────────────
+const fotoRefs: Record<string, HTMLInputElement | null> = {};
+
+function setFotoRef(el: unknown, idx: number, tipo: Tipo) {
+  fotoRefs[`${idx}-${tipo}`] = el as HTMLInputElement | null;
+}
+function triggerFoto(idx: number, tipo: Tipo) {
   fotoRefs[`${idx}-${tipo}`]?.click();
 }
 
-function readFileAsDataUrl(file: File, servico: PodaServico, tipo: 'inicio' | 'fim') {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const result = e.target?.result as string;
-    if (tipo === 'inicio') servico.fotoInicio = result;
-    else servico.fotoFim = result;
-  };
-  reader.readAsDataURL(file);
+// ── Leitura de arquivo ────────────────────────────────────────────────────────
+function readFileAsync(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = (e) => resolve(e.target?.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
 }
 
-function handleFotoChange(event: Event, servico: PodaServico, tipo: 'inicio' | 'fim') {
+function handleFotoChange(event: Event, s: PodaServico, tipo: Tipo) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
-  readFileAsDataUrl(file, servico, tipo);
+  void readFileAsync(file).then((v) => setPhoto(s, tipo, v));
   (event.target as HTMLInputElement).value = '';
 }
 
-function handlePaste(event: ClipboardEvent, servico: PodaServico, tipo: 'inicio' | 'fim') {
+// ── Paste na zona ─────────────────────────────────────────────────────────────
+async function handleZonePaste(event: ClipboardEvent, s: PodaServico, tipo: Tipo) {
   const items = event.clipboardData?.items;
   if (!items) return;
   for (const item of Array.from(items)) {
     if (item.type.startsWith('image/')) {
-      event.preventDefault();
       const file = item.getAsFile();
-      if (file) readFileAsDataUrl(file, servico, tipo);
-      break;
+      if (!file) continue;
+      event.preventDefault();
+      try {
+        setPhoto(s, tipo, await readFileAsync(file));
+        selectedKey.value = { id: s.id, tipo };
+        $q.notify({ type: 'positive', message: 'Imagem colada com sucesso.' });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+      }
+      return;
     }
   }
 }
 
+// ── Paste global (Ctrl+V em qualquer lugar da página) ────────────────────────
+async function handleGlobalPaste(event: ClipboardEvent) {
+  if (document.activeElement?.closest('.evidencia-zone')) return;
+
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (!item.type.startsWith('image/')) continue;
+    const file = item.getAsFile();
+    if (!file) continue;
+
+    // Alvo: célula selecionada, ou primeira vazia
+    let targetS: PodaServico | null = null;
+    let targetT: Tipo = 'inicio';
+
+    if (selectedKey.value) {
+      const found = servicos.value.find((s) => s.id === selectedKey.value!.id);
+      if (found) { targetS = found; targetT = selectedKey.value.tipo; }
+    }
+    if (!targetS) {
+      outer: for (const s of servicos.value) {
+        for (const t of ['inicio', 'fim'] as Tipo[]) {
+          if (!getPhoto(s, t)) { targetS = s; targetT = t; break outer; }
+        }
+      }
+    }
+    if (!targetS) {
+      $q.notify({ type: 'warning', message: 'Selecione uma célula ou libere espaço.' });
+      return;
+    }
+
+    event.preventDefault();
+    try {
+      setPhoto(targetS, targetT, await readFileAsync(file));
+      selectedKey.value = { id: targetS.id, tipo: targetT };
+      $q.notify({ type: 'positive', message: 'Print colado com sucesso.' });
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+    }
+    return;
+  }
+}
+
+onMounted(() => document.addEventListener('paste', handleGlobalPaste));
+onUnmounted(() => document.removeEventListener('paste', handleGlobalPaste));
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+function handleDragStart(s: PodaServico, tipo: Tipo, event: DragEvent) {
+  if (!getPhoto(s, tipo)) return;
+  draggedKey.value = { id: s.id, tipo };
+  event.dataTransfer?.setData('application/x-poda-cell', JSON.stringify({ id: s.id, tipo }));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd() {
+  draggedKey.value    = null;
+  dropTargetKey.value = null;
+}
+
+function handleDragOver(s: PodaServico, tipo: Tipo, event: DragEvent) {
+  const from = draggedKey.value;
+  if (!from) return;
+  if (keysEqual(from, { id: s.id, tipo })) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  dropTargetKey.value = { id: s.id, tipo };
+}
+
+function handleDrop(s: PodaServico, tipo: Tipo, event: DragEvent) {
+  event.preventDefault();
+
+  let fromKey = draggedKey.value;
+  const raw = event.dataTransfer?.getData('application/x-poda-cell');
+  if (raw) {
+    try { fromKey = JSON.parse(raw) as CellKey; } catch { /* noop */ }
+  }
+  if (!fromKey || keysEqual(fromKey, { id: s.id, tipo })) {
+    handleDragEnd(); return;
+  }
+
+  const fromS = servicos.value.find((x) => x.id === fromKey!.id);
+  if (!fromS) { handleDragEnd(); return; }
+
+  const fromPhoto = getPhoto(fromS, fromKey.tipo);
+  const toPhoto   = getPhoto(s, tipo);
+  setPhoto(fromS, fromKey.tipo, toPhoto);
+  setPhoto(s, tipo, fromPhoto);
+  selectedKey.value = { id: s.id, tipo };
+
+  $q.notify({
+    type: 'positive',
+    message: toPhoto ? 'Fotos trocadas.' : 'Foto movida.',
+  });
+  handleDragEnd();
+}
+
+// ── Validação e exportação ────────────────────────────────────────────────────
 function ensureExportavel(): boolean {
   validacaoAtiva.value = true;
   if (preenchidosCount.value === 0) {
@@ -215,7 +426,6 @@ function ensureExportavel(): boolean {
   return true;
 }
 
-// ── Exportações ───────────────────────────────────────────────────────────────
 async function handleExportExcel() {
   if (!ensureExportavel()) return;
   const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Excel…', timeout: 0 });
@@ -250,6 +460,7 @@ function handleReset() {
     persistent: true,
   }).onOk(() => {
     resetForm();
+    selectedKey.value = null;
     validacaoAtiva.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });
@@ -270,7 +481,7 @@ function handleReset() {
   border-radius: 12px;
   overflow: hidden;
   background: var(--q-color-surface, #fff);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: border-color 0.2s;
 }
 
 .body--dark .servico-card {
@@ -286,7 +497,7 @@ function handleReset() {
   border-color: rgba(76, 175, 80, 0.3);
 }
 
-/* Cabeçalho do card */
+/* Cabeçalho */
 .servico-card__header {
   display: flex;
   align-items: center;
@@ -327,12 +538,11 @@ function handleReset() {
   opacity: 0.8;
 }
 
-/* Área de fotos */
+/* Fotos */
 .servico-card__fotos {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   padding: 14px;
-  gap: 0;
 }
 
 .foto-slot {
@@ -362,69 +572,6 @@ function handleReset() {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   opacity: 0.55;
-}
-
-/* ── Célula de foto ──────────────────────────────────────────────────────── */
-.foto-cell {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  border: 1.5px dashed rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: border-color 0.15s, background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.015);
-}
-
-.body--dark .foto-cell {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.foto-cell:hover,
-.foto-cell:focus {
-  border-color: var(--q-primary);
-  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.04);
-  outline: none;
-}
-
-.foto-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.foto-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.foto-placeholder__text {
-  font-size: 12px;
-  font-weight: 500;
-  opacity: 0.5;
-}
-
-.foto-placeholder__hint {
-  font-size: 10.5px;
-  opacity: 0.35;
-}
-
-.foto-remove {
-  position: absolute !important;
-  top: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.5) !important;
-  backdrop-filter: blur(4px);
 }
 
 /* ── Botão adicionar serviço ─────────────────────────────────────────────── */
