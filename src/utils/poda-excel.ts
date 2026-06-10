@@ -1,8 +1,31 @@
 import ExcelJS from 'exceljs';
 import type { PodaServico } from '../stores/poda';
 import { servicoPreenchido } from '../stores/poda';
+import { publicAsset } from './assets';
 
-/** Extrai base64 puro + extensão de um data URL */
+const TEMPLATE_URL = publicAsset('template/RELATORIO_DE_PODAS.xlsx');
+
+// ── Layout do template EVIDÊNCIAS ─────────────────────────────────────────────
+// Bloco 1: linhas Excel 6-30  → fotos em B11:I30 / J11:Q30
+// Bloco 2: linhas Excel 31-55 → fotos em B36:I55 / J36:Q55
+// Padrão: cada bloco = 25 linhas; foto começa 5 linhas após o banner do bloco.
+//
+// ExcelJS usa índices 0-based para col/row:
+//   col B (Excel 2) → 1   col I (Excel 9) → 8  (exclusive: 9)
+//   col J (Excel 10)→ 9   col Q (Excel 17)→ 16 (exclusive: 17)
+const FIRST_BANNER_ROW_EXCEL = 6;  // linha 1-based da primeira "EVIDÊNCIAS FOTOGRÁFICAS:"
+const BLOCK_SIZE              = 25; // linhas por bloco
+const PHOTO_OFFSET            = 5;  // linhas do banner até a área de foto (dentro do bloco)
+const PHOTO_ROWS              = 20; // linhas que a área de foto ocupa
+
+/** Retorna os índices 0-based ExcelJS (tl/br) para o bloco N (1-based). */
+function photoRows(n: number): { tl: number; br: number } {
+  // tl (0-based) = (banner_1based - 1) + offset + (n-1)*blockSize
+  const tl = (FIRST_BANNER_ROW_EXCEL - 1) + PHOTO_OFFSET + (n - 1) * BLOCK_SIZE;
+  return { tl, br: tl + PHOTO_ROWS };
+}
+
+/** Extrai base64 puro + extensão de um data URL. */
 function parseDataUrl(
   dataUrl: string,
 ): { base64: string; extension: 'jpeg' | 'png' } | null {
@@ -14,86 +37,51 @@ function parseDataUrl(
   };
 }
 
-const THIN: Partial<ExcelJS.Border> = { style: 'thin' };
-const BORDER = { top: THIN, bottom: THIN, left: THIN, right: THIN };
-
-// Altura da linha de foto em "pontos" Excel (1 pt ≈ 1.33 px)
-const PHOTO_ROW_H = 170; // ~227 px
-
 export async function exportPodaToExcel(servicos: PodaServico[]): Promise<string> {
   const preenchidos = servicos.filter(servicoPreenchido);
   if (preenchidos.length === 0) {
     throw new Error('Preencha ao menos um serviço antes de exportar.');
   }
 
+  // ── Carrega o template ────────────────────────────────────────────────────────
+  const res = await fetch(TEMPLATE_URL);
+  if (!res.ok) throw new Error(`Template não encontrado (${res.status}).`);
+  const templateBuffer = await res.arrayBuffer();
+
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('PODA');
+  await wb.xlsx.load(templateBuffer);
 
-  // ── Larguras das colunas ──────────────────────────────────────────────────────
-  ws.columns = [
-    { width: 6  }, // A: Nº
-    { width: 32 }, // B: Foto Início
-    { width: 32 }, // C: Foto Fim
-  ];
+  // Localiza a aba EVIDÊNCIAS (segunda aba, nome contém "EVID")
+  const ws =
+    wb.worksheets.find((s) => s.name.toUpperCase().includes('EVID')) ??
+    wb.worksheets[1];
+  if (!ws) throw new Error('Aba EVIDÊNCIAS não encontrada no template.');
 
-  // ── Título ────────────────────────────────────────────────────────────────────
-  ws.mergeCells('A1:C1');
-  const title = ws.getCell('A1');
-  title.value = 'RELATÓRIO DE EVIDÊNCIAS DOS SERVIÇOS EXECUTADOS';
-  title.font = { bold: true, size: 13, color: { argb: 'FF1F497D' } };
-  title.alignment = { horizontal: 'center', vertical: 'middle' };
-  ws.getRow(1).height = 26;
-
-  // ── Cabeçalhos (linha 3) ──────────────────────────────────────────────────────
-  (['Nº', 'Foto Início', 'Foto Fim'] as const).forEach((h, i) => {
-    const cell = ws.getCell(3, i + 1);
-    cell.value = h;
-    cell.font = { bold: true, size: 9 };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } };
-    cell.border = BORDER;
-  });
-  ws.getRow(3).height = 18;
-
-  // ── Linhas de serviço (fotos embutidas) ───────────────────────────────────────
+  // ── Injeta fotos em cada bloco ────────────────────────────────────────────────
   preenchidos.forEach((s, i) => {
-    const rowNum = 4 + i;       // 1-based Excel row
-    const rowIdx = rowNum - 1;  // 0-based para addImage
+    const { tl, br } = photoRows(i + 1);
 
-    // Célula Nº
-    const numCell = ws.getCell(rowNum, 1);
-    numCell.value = s.id;
-    numCell.font = { size: 9, bold: true };
-    numCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    numCell.border = BORDER;
-
-    // Bordas das células de foto (sem texto)
-    ws.getCell(rowNum, 2).border = BORDER;
-    ws.getCell(rowNum, 3).border = BORDER;
-
-    ws.getRow(rowNum).height = PHOTO_ROW_H;
-
-    // ── Foto Início ──────────────────────────────────────────────────────────────
+    // Foto Início → colunas B-I (0-based: 1 a 9)
     if (s.fotoInicio) {
       const parsed = parseDataUrl(s.fotoInicio);
       if (parsed) {
         const imgId = wb.addImage({ base64: parsed.base64, extension: parsed.extension });
         ws.addImage(imgId, {
-          tl: { col: 1, row: rowIdx },
-          br: { col: 2, row: rowIdx + 1 },
+          tl: { col: 1, row: tl },
+          br: { col: 9, row: br },
           editAs: 'twoCell',
         } as ExcelJS.ImageRange);
       }
     }
 
-    // ── Foto Fim ─────────────────────────────────────────────────────────────────
+    // Foto Fim → colunas J-Q (0-based: 9 a 17)
     if (s.fotoFim) {
       const parsed = parseDataUrl(s.fotoFim);
       if (parsed) {
         const imgId = wb.addImage({ base64: parsed.base64, extension: parsed.extension });
         ws.addImage(imgId, {
-          tl: { col: 2, row: rowIdx },
-          br: { col: 3, row: rowIdx + 1 },
+          tl: { col: 9, row: tl },
+          br: { col: 17, row: br },
           editAs: 'twoCell',
         } as ExcelJS.ImageRange);
       }
@@ -108,7 +96,7 @@ export async function exportPodaToExcel(servicos: PodaServico[]): Promise<string
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const ts = new Date().toISOString().slice(0, 10);
-  a.download = `PODA_${ts}.xlsx`;
+  a.download = `RELATORIO_DE_PODAS_${ts}.xlsx`;
   a.href = url;
   a.click();
   URL.revokeObjectURL(url);
