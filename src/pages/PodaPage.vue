@@ -60,11 +60,16 @@
 
                   <!-- Foto Início -->
                   <td class="poda-table__td poda-table__td--foto">
-                    <div class="foto-cell" @click="triggerFoto(idx, 'inicio')">
+                    <div
+                      class="foto-cell"
+                      tabindex="0"
+                      @click="triggerFoto(idx, 'inicio')"
+                      @paste.stop="(e) => handlePaste(e, servico, 'inicio')"
+                    >
                       <img v-if="servico.fotoInicio" :src="servico.fotoInicio" class="foto-thumb" />
                       <div v-else class="foto-placeholder">
                         <q-icon name="add_photo_alternate" size="24px" color="grey-5" />
-                        <span>Adicionar</span>
+                        <span>Clique ou cole</span>
                       </div>
                       <q-btn
                         v-if="servico.fotoInicio"
@@ -84,11 +89,16 @@
 
                   <!-- Foto Fim -->
                   <td class="poda-table__td poda-table__td--foto">
-                    <div class="foto-cell" @click="triggerFoto(idx, 'fim')">
+                    <div
+                      class="foto-cell"
+                      tabindex="0"
+                      @click="triggerFoto(idx, 'fim')"
+                      @paste.stop="(e) => handlePaste(e, servico, 'fim')"
+                    >
                       <img v-if="servico.fotoFim" :src="servico.fotoFim" class="foto-thumb" />
                       <div v-else class="foto-placeholder">
                         <q-icon name="add_photo_alternate" size="24px" color="grey-5" />
-                        <span>Adicionar</span>
+                        <span>Clique ou cole</span>
                       </div>
                       <q-btn
                         v-if="servico.fotoFim"
@@ -119,6 +129,14 @@
 
                 </tr>
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="4" class="poda-table__add-row" @click="addServico">
+                    <q-icon name="add_circle_outline" size="16px" />
+                    Adicionar linha
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </q-card-section>
@@ -160,6 +178,24 @@ function triggerFoto(idx: number, tipo: 'inicio' | 'fim') {
 function handleFotoChange(event: Event, servico: PodaServico, tipo: 'inicio' | 'fim') {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
+  readFileAsDataUrl(file, servico, tipo);
+  (event.target as HTMLInputElement).value = '';
+}
+
+function handlePaste(event: ClipboardEvent, servico: PodaServico, tipo: 'inicio' | 'fim') {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault();
+      const file = item.getAsFile();
+      if (file) readFileAsDataUrl(file, servico, tipo);
+      break;
+    }
+  }
+}
+
+function readFileAsDataUrl(file: File, servico: PodaServico, tipo: 'inicio' | 'fim') {
   const reader = new FileReader();
   reader.onload = (e) => {
     const result = e.target?.result as string;
@@ -167,7 +203,6 @@ function handleFotoChange(event: Event, servico: PodaServico, tipo: 'inicio' | '
     else servico.fotoFim = result;
   };
   reader.readAsDataURL(file);
-  (event.target as HTMLInputElement).value = '';
 }
 
 function ensureExportavel(): boolean {
@@ -300,9 +335,11 @@ function handleReset() {
   justify-content: center;
 }
 
-.foto-cell:hover {
+.foto-cell:hover,
+.foto-cell:focus {
   border-color: var(--q-primary);
   background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.04);
+  outline: none;
 }
 
 .body--dark .foto-cell {
@@ -335,5 +372,32 @@ function handleReset() {
 
 .body--dark .foto-remove {
   background: rgba(30, 30, 30, 0.85) !important;
+}
+
+/* ── Rodapé "Adicionar linha" ────────────────────────────────────────────── */
+.poda-table__add-row {
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--q-primary);
+  cursor: pointer;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  transition: background 0.15s;
+  display: table-cell;
+  user-select: none;
+}
+
+.poda-table__add-row:hover {
+  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.06);
+}
+
+.poda-table__add-row .q-icon {
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.body--dark .poda-table__add-row {
+  border-color: rgba(255, 255, 255, 0.1);
 }
 </style>
