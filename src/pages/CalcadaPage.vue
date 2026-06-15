@@ -1,0 +1,570 @@
+<template>
+  <q-page class="page-shell">
+    <div class="page-shell__inner">
+      <header class="page-header">
+        <div class="page-header__eyebrow">
+          <q-icon name="dashboard" size="14px" />
+          Formulário operacional
+        </div>
+        <h1 class="page-header__title">Reparo de Calçada</h1>
+        <p class="page-header__subtitle">
+          Informe os dados da obra e registre as evidências antes/depois de cada reparo.
+        </p>
+      </header>
+
+      <!-- ── Barra de ações ──────────────────────────────────────────────────── -->
+      <div class="action-bar action-bar--top q-mb-md">
+        <div class="action-bar__actions action-bar__actions--end">
+          <q-btn outline color="negative" icon="restart_alt" label="LIMPAR" no-caps @click="handleReset" />
+          <q-btn unelevated icon="download" label="EXCEL" class="action-btn--excel" no-caps @click="handleExportExcel" />
+          <q-btn unelevated icon="picture_as_pdf" label="PDF" class="action-btn--pdf" no-caps @click="handleExportPdf" />
+        </div>
+      </div>
+
+      <!-- ── Dados da obra ───────────────────────────────────────────────────── -->
+      <q-card flat class="premium-card q-mb-md">
+        <div class="premium-card__header">
+          <div class="premium-card__header-title">
+            <div class="premium-card__header-icon"><q-icon name="business" size="22px" /></div>
+            Dados da Obra
+          </div>
+        </div>
+        <q-card-section class="premium-card__body">
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-4">
+              <q-input v-model="obra.pep" label="PEP *" outlined dense hide-bottom-space
+                :error="validacaoAtiva && !obra.pep.trim()" error-message="Informe o PEP" />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-input v-model="obra.nota" label="Nota" outlined dense hide-bottom-space />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-select v-model="obra.distrital" :options="distritalOptions" label="Distrital"
+                outlined dense emit-value map-options hide-bottom-space clearable />
+            </div>
+            <div class="col-12 col-md-8">
+              <q-input v-model="obra.descricaoObra" label="Descrição da Obra *" outlined dense hide-bottom-space
+                :error="validacaoAtiva && !obra.descricaoObra.trim()" error-message="Informe a descrição" />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-input v-model="obra.municipio" label="Município / Cidade" outlined dense hide-bottom-space />
+            </div>
+          </div>
+
+          <!-- Campos calculados -->
+          <div class="row q-col-gutter-md q-mt-xs items-center">
+            <div class="col-6 col-md-2">
+              <div class="calc-field">
+                <span class="calc-field__label">PI</span>
+                <span class="calc-field__value">{{ pi || '—' }}</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="calc-field">
+                <span class="calc-field__label">Setor</span>
+                <span class="calc-field__value">{{ setor || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- ── Dados do reparo ─────────────────────────────────────────────────── -->
+      <q-card flat class="premium-card q-mb-md">
+        <div class="premium-card__header">
+          <div class="premium-card__header-title">
+            <div class="premium-card__header-icon"><q-icon name="straighten" size="22px" /></div>
+            Dados Reparo de Calçadas
+          </div>
+        </div>
+        <q-card-section class="premium-card__body">
+          <div class="row q-col-gutter-md items-center">
+            <div class="col-12 col-md-4">
+              <q-input v-model.number="obra.quantidade" type="number" min="0" step="0.01"
+                label="Quantidade (m²)" outlined dense hide-bottom-space suffix="m²" />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-input v-model.number="obra.valorSap" type="number" min="0" step="0.01"
+                label="Valor SAP (R$/m²)" outlined dense hide-bottom-space prefix="R$" />
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="calc-field calc-field--highlight">
+                <span class="calc-field__label">Valor R$ (calculado)</span>
+                <span class="calc-field__value">{{ valorRsFmt }}</span>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- ── Evidências ──────────────────────────────────────────────────────── -->
+      <div class="action-bar q-mb-md">
+        <div class="stat-chip">
+          <q-icon name="check_circle" size="18px" color="primary" />
+          <strong>{{ preenchidasCount }}</strong> evidência(s) preenchida(s)
+        </div>
+      </div>
+
+      <div class="servicos-grid">
+        <div
+          v-for="(ev, idx) in evidencias"
+          :key="ev.id"
+          class="servico-card"
+          :class="{ 'servico-card--ok': evidenciaPreenchida(ev) }"
+        >
+          <div class="servico-card__header">
+            <div class="servico-card__header-left">
+              <span class="servico-card__badge">{{ ev.id }}</span>
+              <span class="servico-card__title">Evidência {{ ev.id }}</span>
+              <q-icon v-if="evidenciaPreenchida(ev)" name="check_circle" size="16px" color="positive" class="q-ml-xs" />
+            </div>
+            <div class="row items-center q-gutter-sm">
+              <q-input v-model="ev.pg" label="PG" dense outlined hide-bottom-space class="pg-input" />
+              <q-btn flat round dense icon="delete_outline" color="negative" size="sm"
+                :disable="evidencias.length <= 1" @click="removeEvidencia(idx)">
+                <q-tooltip>Remover evidência</q-tooltip>
+              </q-btn>
+            </div>
+          </div>
+
+          <div class="servico-card__fotos">
+            <!-- ANTES -->
+            <div class="foto-slot">
+              <div class="foto-slot__label">
+                <q-icon name="history" size="14px" /> Antes
+              </div>
+              <PhotoCell
+                :value="ev.fotoAntes"
+                :selected="isSelected(ev, 'antes')"
+                :drop-target="isDropTarget(ev, 'antes')"
+                :dragging="isDragging(ev, 'antes')"
+                @select="selectCell(ev, 'antes', $event)"
+                @paste="handleZonePaste($event, ev, 'antes')"
+                @pick="triggerFoto(idx, 'antes')"
+                @clear="ev.fotoAntes = ''"
+                @dragstart="handleDragStart(ev, 'antes', $event)"
+                @dragend="handleDragEnd"
+                @dragover="handleDragOver(ev, 'antes', $event)"
+                @drop="handleDrop(ev, 'antes', $event)"
+              />
+              <input :ref="(el) => setFotoRef(el, idx, 'antes')" type="file" accept="image/*"
+                style="display:none" @change="(e) => handleFotoChange(e, ev, 'antes')" />
+            </div>
+
+            <div class="foto-slot__divider" />
+
+            <!-- DEPOIS -->
+            <div class="foto-slot">
+              <div class="foto-slot__label">
+                <q-icon name="update" size="14px" /> Depois
+              </div>
+              <PhotoCell
+                :value="ev.fotoDepois"
+                :selected="isSelected(ev, 'depois')"
+                :drop-target="isDropTarget(ev, 'depois')"
+                :dragging="isDragging(ev, 'depois')"
+                @select="selectCell(ev, 'depois', $event)"
+                @paste="handleZonePaste($event, ev, 'depois')"
+                @pick="triggerFoto(idx, 'depois')"
+                @clear="ev.fotoDepois = ''"
+                @dragstart="handleDragStart(ev, 'depois', $event)"
+                @dragend="handleDragEnd"
+                @dragover="handleDragOver(ev, 'depois', $event)"
+                @drop="handleDrop(ev, 'depois', $event)"
+              />
+              <input :ref="(el) => setFotoRef(el, idx, 'depois')" type="file" accept="image/*"
+                style="display:none" @change="(e) => handleFotoChange(e, ev, 'depois')" />
+            </div>
+          </div>
+        </div>
+
+        <button class="servicos-add-btn" @click="addEvidencia">
+          <q-icon name="add_circle_outline" size="20px" />
+          Adicionar evidência
+        </button>
+      </div>
+    </div>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, h } from 'vue';
+import { useQuasar } from 'quasar';
+import { storeToRefs } from 'pinia';
+import { useCalcadaStore, evidenciaPreenchida } from 'src/stores/calcada';
+import type { CalcadaEvidencia } from 'src/stores/calcada';
+import { calcularPi, calcularSetor, calcularValorRs, formatBRL } from 'src/utils/calcada-helpers';
+import { exportCalcadaToExcel } from 'src/utils/calcada-excel';
+import { exportCalcadaToPdf } from 'src/utils/calcada-pdf';
+import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
+import distritaisData from 'src/data/arrasto-distritais.json';
+
+// ── Componente inline de célula de foto (evita repetição) ────────────────────
+const PhotoCell = (props: {
+  value: string; selected: boolean; dropTarget: boolean; dragging: boolean;
+}, { emit }: { emit: (e: string, ...args: unknown[]) => void }) => {
+  const cls = [
+    'evidencia-zone',
+    props.value ? 'evidencia-zone--filled relative-position' : 'evidencia-zone--empty flex flex-center column',
+    { 'evidencia-zone--selected': props.selected, 'evidencia-zone--drop-target': props.dropTarget, 'evidencia-zone--dragging': props.dragging },
+  ];
+  const handlers = {
+    tabindex: '0',
+    onClick: (e: Event) => emit('select', e),
+    onPaste: (e: Event) => emit('paste', e),
+    onDragover: (e: Event) => emit('dragover', e),
+    onDrop: (e: Event) => emit('drop', e),
+  };
+  if (props.value) {
+    return h('div', { ...handlers, title: 'Arraste para outra célula ou cole com Ctrl+V' }, [
+      h('img', {
+        src: props.value, draggable: 'true',
+        class: 'evidencia-img evidencia-img--draggable',
+        style: 'width:100%; max-height:200px; object-fit:contain; border-radius:8px;',
+        onDragstart: (e: Event) => emit('dragstart', e),
+        onDragend: () => emit('dragend'),
+      }),
+      h('button', {
+        class: 'foto-remove-btn',
+        onClick: (e: Event) => { e.stopPropagation(); emit('clear'); },
+      }, '✕'),
+    ]);
+  }
+  return h('div', { ...handlers, title: 'Selecione, cole (Ctrl+V) ou arraste uma imagem' }, [
+    h('button', {
+      type: 'button', class: 'evidencia-zone__upload-trigger',
+      onClick: (e: Event) => { e.stopPropagation(); emit('pick'); },
+    }, [
+      h('div', { class: 'column items-center' }, [
+        h('span', { class: 'text-h5', style: 'opacity:.4' }, '🖼'),
+        h('span', { class: 'text-grey-6 text-caption' }, 'Clique para anexar'),
+      ]),
+    ]),
+    h('span', { class: 'evidencia-zone__paste-hint text-grey-6 text-caption' }, 'ou cole (Ctrl+V) ou arraste'),
+  ]);
+};
+
+const $q = useQuasar();
+const store = useCalcadaStore();
+const { obra, evidencias } = storeToRefs(store);
+const { addEvidencia, removeEvidencia, resetForm } = store;
+
+const validacaoAtiva = ref(false);
+
+const distritalOptions = (distritaisData as string[]).map((value) => ({
+  label: formatDistritalLabel(value),
+  value,
+}));
+
+const pi = computed(() => calcularPi(obra.value.pep));
+const setor = computed(() => calcularSetor(obra.value.pep));
+const valorRsFmt = computed(() => formatBRL(calcularValorRs(obra.value.quantidade, obra.value.valorSap)));
+const preenchidasCount = computed(() => evidencias.value.filter(evidenciaPreenchida).length);
+
+// ── Chave de célula ───────────────────────────────────────────────────────────
+type Tipo = 'antes' | 'depois';
+interface CellKey { id: number; tipo: Tipo }
+
+const selectedKey = ref<CellKey | null>(null);
+const draggedKey = ref<CellKey | null>(null);
+const dropTargetKey = ref<CellKey | null>(null);
+
+function eq(a: CellKey | null, b: CellKey) { return !!a && a.id === b.id && a.tipo === b.tipo; }
+function isSelected(e: CalcadaEvidencia, t: Tipo) { return eq(selectedKey.value, { id: e.id, tipo: t }); }
+function isDropTarget(e: CalcadaEvidencia, t: Tipo) { return eq(dropTargetKey.value, { id: e.id, tipo: t }); }
+function isDragging(e: CalcadaEvidencia, t: Tipo) { return eq(draggedKey.value, { id: e.id, tipo: t }); }
+
+function getPhoto(e: CalcadaEvidencia, t: Tipo) { return t === 'antes' ? e.fotoAntes : e.fotoDepois; }
+function setPhoto(e: CalcadaEvidencia, t: Tipo, v: string) {
+  if (t === 'antes') e.fotoAntes = v; else e.fotoDepois = v;
+}
+
+function selectCell(e: CalcadaEvidencia, t: Tipo, event?: Event) {
+  selectedKey.value = { id: e.id, tipo: t };
+  const el = event?.currentTarget;
+  if (el instanceof HTMLElement) el.focus();
+}
+
+// ── File inputs ───────────────────────────────────────────────────────────────
+const fotoRefs: Record<string, HTMLInputElement | null> = {};
+function setFotoRef(el: unknown, idx: number, t: Tipo) { fotoRefs[`${idx}-${t}`] = el as HTMLInputElement | null; }
+function triggerFoto(idx: number, t: Tipo) { fotoRefs[`${idx}-${t}`]?.click(); }
+
+function readFileAsync(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = (e) => resolve(e.target?.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function handleFotoChange(event: Event, e: CalcadaEvidencia, t: Tipo) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  void readFileAsync(file).then((v) => setPhoto(e, t, v));
+  (event.target as HTMLInputElement).value = '';
+}
+
+async function handleZonePaste(event: Event, e: CalcadaEvidencia, t: Tipo) {
+  const ce = event as ClipboardEvent;
+  const items = ce.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (!file) continue;
+      ce.preventDefault();
+      try {
+        setPhoto(e, t, await readFileAsync(file));
+        selectedKey.value = { id: e.id, tipo: t };
+        $q.notify({ type: 'positive', message: 'Imagem colada com sucesso.' });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+      }
+      return;
+    }
+  }
+}
+
+async function handleGlobalPaste(event: ClipboardEvent) {
+  if (document.activeElement?.closest('.evidencia-zone')) return;
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (!item.type.startsWith('image/')) continue;
+    const file = item.getAsFile();
+    if (!file) continue;
+
+    let target: CalcadaEvidencia | null = null;
+    let tipo: Tipo = 'antes';
+    if (selectedKey.value) {
+      const found = evidencias.value.find((e) => e.id === selectedKey.value!.id);
+      if (found) { target = found; tipo = selectedKey.value.tipo; }
+    }
+    if (!target) {
+      outer: for (const e of evidencias.value) {
+        for (const t of ['antes', 'depois'] as Tipo[]) {
+          if (!getPhoto(e, t)) { target = e; tipo = t; break outer; }
+        }
+      }
+    }
+    if (!target) { $q.notify({ type: 'warning', message: 'Selecione uma célula ou libere espaço.' }); return; }
+
+    event.preventDefault();
+    try {
+      setPhoto(target, tipo, await readFileAsync(file));
+      selectedKey.value = { id: target.id, tipo };
+      $q.notify({ type: 'positive', message: 'Print colado com sucesso.' });
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+    }
+    return;
+  }
+}
+
+onMounted(() => document.addEventListener('paste', handleGlobalPaste));
+onUnmounted(() => document.removeEventListener('paste', handleGlobalPaste));
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+function handleDragStart(e: CalcadaEvidencia, t: Tipo, event: Event) {
+  const de = event as DragEvent;
+  if (!getPhoto(e, t)) return;
+  draggedKey.value = { id: e.id, tipo: t };
+  de.dataTransfer?.setData('application/x-calcada-cell', JSON.stringify({ id: e.id, tipo: t }));
+  if (de.dataTransfer) de.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd() { draggedKey.value = null; dropTargetKey.value = null; }
+
+function handleDragOver(e: CalcadaEvidencia, t: Tipo, event: Event) {
+  const de = event as DragEvent;
+  const from = draggedKey.value;
+  if (!from || eq(from, { id: e.id, tipo: t })) return;
+  de.preventDefault();
+  if (de.dataTransfer) de.dataTransfer.dropEffect = 'move';
+  dropTargetKey.value = { id: e.id, tipo: t };
+}
+
+function handleDrop(e: CalcadaEvidencia, t: Tipo, event: Event) {
+  const de = event as DragEvent;
+  de.preventDefault();
+  let fromKey = draggedKey.value;
+  const raw = de.dataTransfer?.getData('application/x-calcada-cell');
+  if (raw) { try { fromKey = JSON.parse(raw) as CellKey; } catch { /* noop */ } }
+  if (!fromKey || eq(fromKey, { id: e.id, tipo: t })) { handleDragEnd(); return; }
+
+  const fromE = evidencias.value.find((x) => x.id === fromKey!.id);
+  if (!fromE) { handleDragEnd(); return; }
+
+  const fromPhoto = getPhoto(fromE, fromKey.tipo);
+  const toPhoto = getPhoto(e, t);
+  setPhoto(fromE, fromKey.tipo, toPhoto);
+  setPhoto(e, t, fromPhoto);
+  selectedKey.value = { id: e.id, tipo: t };
+  $q.notify({ type: 'positive', message: toPhoto ? 'Fotos trocadas.' : 'Foto movida.' });
+  handleDragEnd();
+}
+
+// ── Validação e exportação ────────────────────────────────────────────────────
+function ensureExportavel(): boolean {
+  validacaoAtiva.value = true;
+  if (!obra.value.pep.trim() || !obra.value.descricaoObra.trim()) {
+    $q.notify({ type: 'negative', icon: 'warning', message: 'Preencha o PEP e a descrição da obra.' });
+    return false;
+  }
+  if (preenchidasCount.value === 0) {
+    $q.notify({ type: 'negative', icon: 'photo_camera', message: 'Adicione pelo menos 1 evidência com foto.' });
+    return false;
+  }
+  return true;
+}
+
+async function handleExportExcel() {
+  if (!ensureExportavel()) return;
+  const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Excel…', timeout: 0 });
+  try {
+    const { fileName, truncated } = await exportCalcadaToExcel(obra.value, evidencias.value);
+    dismiss();
+    $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
+    if (truncated) {
+      $q.notify({ type: 'warning', timeout: 7000,
+        message: 'O modelo Excel comporta até 9 evidências — as excedentes não foram incluídas (use o PDF para todas).' });
+    }
+  } catch (error) {
+    dismiss();
+    $q.notify({ type: 'negative', message: error instanceof Error ? error.message : 'Erro ao gerar Excel.' });
+  }
+}
+
+async function handleExportPdf() {
+  if (!ensureExportavel()) return;
+  const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando PDF…', timeout: 0 });
+  try {
+    const fileName = await exportCalcadaToPdf(obra.value, evidencias.value);
+    dismiss();
+    $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
+  } catch (error) {
+    dismiss();
+    $q.notify({ type: 'negative', message: error instanceof Error ? error.message : 'Erro ao gerar PDF.' });
+  }
+}
+
+function handleReset() {
+  $q.dialog({
+    title: 'Limpar formulário',
+    message: 'Deseja apagar todos os dados da obra e evidências?',
+    cancel: true, persistent: true,
+  }).onOk(() => {
+    resetForm();
+    selectedKey.value = null;
+    validacaoAtiva.value = false;
+    $q.notify({ type: 'info', message: 'Formulário limpo.' });
+  });
+}
+</script>
+
+<style scoped>
+/* ── Campos calculados ───────────────────────────────────────────────────── */
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 12px;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.body--dark .calc-field {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.calc-field--highlight {
+  border-style: solid;
+  border-color: var(--q-primary);
+  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.06);
+}
+
+.calc-field__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.55;
+}
+
+.calc-field__value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ── Grid / cards de evidência ───────────────────────────────────────────── */
+.servicos-grid { display: flex; flex-direction: column; gap: 12px; }
+
+.servico-card {
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--q-color-surface, #fff);
+  transition: border-color 0.2s;
+}
+
+.body--dark .servico-card { border-color: rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); }
+.servico-card--ok { border-color: rgba(76, 175, 80, 0.35); }
+
+.servico-card__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.body--dark .servico-card__header { border-color: rgba(255, 255, 255, 0.06); background: rgba(255, 255, 255, 0.025); }
+
+.servico-card__header-left { display: flex; align-items: center; gap: 8px; }
+
+.servico-card__badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--q-primary); color: #fff;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+.servico-card__title { font-size: 13px; font-weight: 600; opacity: 0.8; }
+
+.pg-input { width: 110px; }
+
+.servico-card__fotos { display: grid; grid-template-columns: 1fr auto 1fr; padding: 14px; }
+
+.foto-slot { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+.foto-slot__divider { width: 1px; margin: 0 14px; background: rgba(0, 0, 0, 0.07); align-self: stretch; }
+.body--dark .foto-slot__divider { background: rgba(255, 255, 255, 0.07); }
+
+.foto-slot__label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.55;
+}
+
+:deep(.evidencia-zone--empty) { height: 200px; }
+:deep(.foto-remove-btn) {
+  position: absolute; top: 6px; right: 6px;
+  width: 24px; height: 24px; border-radius: 50%; border: none;
+  background: rgba(0, 0, 0, 0.5); color: #fff; cursor: pointer;
+  font-size: 12px; line-height: 1;
+}
+
+.servicos-add-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 12px;
+  border: 1.5px dashed rgba(0, 0, 0, 0.15); border-radius: 12px;
+  background: transparent; color: var(--q-primary);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.servicos-add-btn:hover { background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.06); border-color: var(--q-primary); }
+.body--dark .servicos-add-btn { border-color: rgba(255, 255, 255, 0.15); }
+</style>

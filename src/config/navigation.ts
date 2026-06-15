@@ -52,6 +52,12 @@ export const navItems: NavItem[] = [
     route: '/poda',
   },
   {
+    title: 'CALÇADA',
+    caption: 'Reparo de calçadas',
+    icon: 'dashboard',
+    route: '/calcada',
+  },
+  {
     title: 'EMERGENCIAL',
     caption: 'Acessar outro projeto',
     icon: 'open_in_new',

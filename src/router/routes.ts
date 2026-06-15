@@ -35,6 +35,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/PodaPage.vue'),
         meta: { title: 'PODA' },
       },
+      {
+        path: 'calcada',
+        component: () => import('pages/CalcadaPage.vue'),
+        meta: { title: 'CALÇADA' },
+      },
     ],
   },
   {

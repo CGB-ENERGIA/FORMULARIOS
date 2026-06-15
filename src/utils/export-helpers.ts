@@ -1,6 +1,7 @@
 import type { ObraInfo } from '../stores/consumidores';
 import type { ArrastoObra } from '../stores/arrasto';
 import type { DesligamentoObra } from '../stores/desligamento';
+import type { CalcadaObra } from '../stores/calcada';
 
 export function sanitizeFileNamePart(value: string): string {
   return value.trim().replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ');
@@ -22,4 +23,9 @@ export function buildDesligamentoExportFileName(
 export function buildArrastoExportFileName(obra: ArrastoObra, extension: 'xlsm' | 'pdf' = 'xlsm'): string {
   const pep = sanitizeFileNamePart(obra.pep) || 'arrasto';
   return `MEMÓRIA DE CÁLCULO ARRASTO - ${pep}.${extension}`;
+}
+
+export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' | 'pdf'): string {
+  const pep = sanitizeFileNamePart(obra.pep) || 'calcada';
+  return `ANEXO REPARO DE CALÇADA - ${pep}.${extension}`;
 }
