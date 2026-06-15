@@ -1,13 +1,16 @@
 import ExcelJS from 'exceljs';
 import type { CalcadaObra, CalcadaEvidencia } from '../stores/calcada';
 import { evidenciaPreenchida } from '../stores/calcada';
-import { calcularPepLimpo, calcularValorRs } from './calcada-helpers';
+import { calcularPepLimpo, calcularPi, calcularSetor, calcularValorRs } from './calcada-helpers';
 import { publicAsset } from './assets';
 import { buildCalcadaExportFileName } from './export-helpers';
 
 const TEMPLATE_URL = publicAsset('template/CONTROLE_REPARO_CALCADAS.xlsm');
 const SHEET_ANEXO = 'GERAR ANEXO';
 const SHEET_BANCO = 'BANCO';
+const BANCO_TABLE = 'Base_reparo_calcada';
+const BANCO_FIRST_ROW = 6;
+const BANCO_LAST_ROW = 103;
 
 /**
  * Posições dos 9 blocos de evidência no modelo (1-indexed).
@@ -82,6 +85,46 @@ function fillObra(sheet: ExcelJS.Worksheet, obra: CalcadaObra) {
   sheet.getCell('Q8').value = calcularPepLimpo(obra.pep);
 }
 
+/**
+ * Preenche a aba BANCO com a linha da obra atual.
+ *
+ * O modelo usa uma tabela do Excel (Base_reparo_calcada) com colunas
+ * calculadas (SETOR, PI, QUANTIDADE DIAS) que dependem de referências
+ * estruturadas. O ExcelJS não preserva a tabela ao reescrever, o que gera
+ * #REF! nessas colunas. Por isso removemos a tabela, limpamos as fórmulas
+ * quebradas de todas as linhas e gravamos os valores já calculados.
+ */
+function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: boolean) {
+  // Remove a tabela (mantém o cabeçalho e os estilos das células)
+  try {
+    if (sheet.getTable(BANCO_TABLE)) {
+      sheet.removeTable(BANCO_TABLE);
+    }
+  } catch {
+    // Tabela ausente — segue em frente.
+  }
+
+  // Limpa as colunas de fórmula (A=SETOR, B=PI, J=QUANTIDADE DIAS) em todas as
+  // linhas de dados para eliminar qualquer #REF! remanescente.
+  for (let r = BANCO_FIRST_ROW; r <= BANCO_LAST_ROW; r++) {
+    sheet.getCell(`A${r}`).value = null;
+    sheet.getCell(`B${r}`).value = null;
+    sheet.getCell(`J${r}`).value = null;
+  }
+
+  // Grava a obra na primeira linha de dados com os valores já calculados.
+  const r = BANCO_FIRST_ROW;
+  sheet.getCell(`A${r}`).value = calcularSetor(obra.pep);           // SETOR
+  sheet.getCell(`B${r}`).value = calcularPi(obra.pep);             // PI
+  sheet.getCell(`C${r}`).value = obra.pep;                          // PEP
+  sheet.getCell(`D${r}`).value = obra.nota;                         // NOTA
+  sheet.getCell(`E${r}`).value = obra.descricaoObra;               // DESCRITIVO
+  sheet.getCell(`F${r}`).value = obra.distrital;                    // DISTRITAL
+  sheet.getCell(`G${r}`).value = obra.municipio;                    // MUNICIPIO
+  sheet.getCell(`H${r}`).value = obra.quantidade ?? null;          // QUANTIDADE CALÇADA
+  sheet.getCell(`M${r}`).value = temEvidencia ? 'Sim' : '';        // EVIDÊNCIA ANEXADA?
+}
+
 function insertEvidencia(
   workbook: ExcelJS.Workbook,
   sheet: ExcelJS.Worksheet,
@@ -148,12 +191,10 @@ export async function exportCalcadaToExcel(
   const usadas = preenchidas.slice(0, MAX_BLOCOS_EXCEL);
   usadas.forEach((evidencia, i) => insertEvidencia(workbook, anexo, evidencia, i));
 
-  // A aba BANCO é apenas o banco de dados de origem do modelo. Seus campos no
-  // anexo já foram preenchidos com valores diretos, então ela é removida do
-  // arquivo final — evita os #REF! que o ExcelJS gera ao reescrever a tabela.
+  // Preenche a aba BANCO com a linha da obra (sem os #REF! do modelo).
   const banco = workbook.getWorksheet(SHEET_BANCO);
   if (banco) {
-    workbook.removeWorksheet(banco.id);
+    fillBanco(banco, obra, preenchidas.length > 0);
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
