@@ -85,14 +85,20 @@ function fillObra(sheet: ExcelJS.Worksheet, obra: CalcadaObra) {
   sheet.getCell('Q8').value = calcularPepLimpo(obra.pep);
 }
 
+// Larguras das colunas da aba BANCO (idênticas ao modelo original).
+const BANCO_COL_WIDTHS = [
+  13.77, 9.33, 26, 11.33, 45.11, 18.22, 31.22, 23.89, 29.33, 22.22, 23.78, 20.66, 18.22,
+];
+
 /**
  * Preenche a aba BANCO com a linha da obra atual.
  *
  * O modelo usa uma tabela do Excel (Base_reparo_calcada) com colunas
  * calculadas (SETOR, PI, QUANTIDADE DIAS) que dependem de referências
- * estruturadas. O ExcelJS não preserva a tabela ao reescrever, o que gera
- * #REF! nessas colunas. Por isso removemos a tabela, limpamos as fórmulas
- * quebradas de todas as linhas e gravamos os valores já calculados.
+ * estruturadas. O ExcelJS não preserva essa tabela ao reescrever (corrompe as
+ * definições de coluna e gera #REF!). Por isso a tabela é removida e o visual
+ * é reconstruído com autoFilter (setas de filtro) e as larguras originais —
+ * o cabeçalho e os estilos das células são mantidos.
  */
 function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: boolean) {
   // Remove a tabela (mantém o cabeçalho e os estilos das células)
@@ -123,6 +129,10 @@ function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: bo
   sheet.getCell(`G${r}`).value = obra.municipio;                    // MUNICIPIO
   sheet.getCell(`H${r}`).value = obra.quantidade ?? null;          // QUANTIDADE CALÇADA
   sheet.getCell(`M${r}`).value = temEvidencia ? 'Sim' : '';        // EVIDÊNCIA ANEXADA?
+
+  // Restaura as setas de filtro e as larguras das colunas (perdidas com a tabela).
+  sheet.autoFilter = `A5:M${BANCO_LAST_ROW}`;
+  BANCO_COL_WIDTHS.forEach((w, i) => { sheet.getColumn(i + 1).width = w; });
 }
 
 function insertEvidencia(
