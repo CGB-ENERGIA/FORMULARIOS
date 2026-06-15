@@ -1,36 +1,39 @@
 import { jsPDF } from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
 import type { CalcadaObra, CalcadaEvidencia } from '../stores/calcada';
 import { evidenciaPreenchida } from '../stores/calcada';
 import { calcularValorRs, formatBRL } from './calcada-helpers';
 import { buildCalcadaExportFileName } from './export-helpers';
 import { publicAsset } from './assets';
 
-const BANNER_URL = publicAsset('template/banner.png');
+const LOGO_URL = publicAsset('template/calcada-logo.png');
 
-// ── Medidas retrato A4 (mm) ───────────────────────────────────────────────────
-const PAGE_W = 210;
-const PAGE_H = 297;
-const MX = 8;
-const CONT_W = PAGE_W - MX * 2;       // 194
-const PHOTO_W = (CONT_W - 4) / 2;     // ~95
-const PHOTO_H = PHOTO_W * (9.6 / 12.8); // ~71
-const BLOCO_H = 6 + PHOTO_H + 4;       // banner do bloco + foto + margem
+// ── Layout em pontos (idêntico ao anexo de referência, A4 retrato) ────────────
+const GRAY: [number, number, number] = [242, 242, 242];
+const BLACK: [number, number, number] = [0, 0, 0];
 
-// ── Cores ─────────────────────────────────────────────────────────────────────
-const DBLUE: [number, number, number] = [31, 73, 125];
-const LBLUE: [number, number, number] = [189, 215, 238];
-const LGRAY: [number, number, number] = [242, 242, 242];
-const GRAY: [number, number, number] = [166, 166, 166];
+const X0 = 37;   // borda esquerda do quadro
+const X1 = 545;  // borda direita do quadro
+const CX = (X0 + X1) / 2; // centro horizontal (≈ 291)
 
-type DocEx = jsPDF & {
-  lastAutoTable?: { finalY: number };
-  internal: { getNumberOfPages(): number };
-};
+// Fronteiras verticais das colunas dos blocos de evidência
+const ANTES_LBL_R = 79;   // fim da coluna do rótulo "ANTES"
+const ANTES_PH_R = 291;   // fim da foto ANTES / início rótulo DEPOIS
+const DEPOIS_LBL_R = 333;  // fim da coluna do rótulo "DEPOIS"
 
-async function loadBannerBase64(): Promise<string> {
-  const res = await fetch(BANNER_URL);
-  if (!res.ok) throw new Error('Banner não encontrado.');
+// Blocos: 4 por página, passo de 128 pt
+const BLOCK_PITCH = 128;
+const BLOCKS_PER_PAGE = 4;
+const FIRST_PG_TOP = 130;
+const PHOTO_OFFSET = 12;   // do topo do "PG:" até o topo da foto
+const PHOTO_H = 113;
+
+const LINE_W = 0.5;
+
+type DocPt = jsPDF & { internal: { getNumberOfPages(): number } };
+
+async function loadLogoBase64(): Promise<string> {
+  const res = await fetch(LOGO_URL);
+  if (!res.ok) throw new Error('Logo do anexo não encontrado.');
   const buf = await res.arrayBuffer();
   const bytes = new Uint8Array(buf);
   let bin = '';
@@ -38,107 +41,131 @@ async function loadBannerBase64(): Promise<string> {
   return `data:image/png;base64,${btoa(bin)}`;
 }
 
-function drawHeader(doc: DocEx, banner: string, obra: CalcadaObra, y: number): number {
-  // Banner
-  doc.addImage(banner, 'PNG', MX, y, CONT_W, 18);
-  y += 20;
-
-  // Título
-  doc.setFillColor(...DBLUE);
-  doc.rect(MX, y, CONT_W, 8, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text('RELATÓRIO DE EVIDÊNCIAS — REPARO DE CALÇADA', PAGE_W / 2, y + 5.5, { align: 'center' });
-  y += 10;
-
-  const valorRs = calcularValorRs(obra.quantidade, obra.valorSap);
-
-  // DADOS OBRA + DADOS REPARO em tabela
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MX, right: MX },
-    tableWidth: CONT_W,
-    theme: 'grid',
-    styles: { fontSize: 7, cellPadding: 1.6, valign: 'middle', lineColor: GRAY, lineWidth: 0.2 },
-    columnStyles: {
-      0: { cellWidth: 28, fontStyle: 'bold', fillColor: LGRAY, textColor: DBLUE },
-      1: { cellWidth: CONT_W / 2 - 28 },
-      2: { cellWidth: 28, fontStyle: 'bold', fillColor: LGRAY, textColor: DBLUE },
-      3: { cellWidth: CONT_W / 2 - 28 },
-    },
-    body: [
-      ['PEP:', obra.pep || '—', 'NOTA:', obra.nota || '—'],
-      ['DISTRITAL:', obra.distrital || '—', 'CIDADE:', obra.municipio || '—'],
-      ['DESCRIÇÃO:', { content: obra.descricaoObra || '—', colSpan: 3 } as never],
-      [
-        'QUANTIDADE:', obra.quantidade != null ? `${obra.quantidade} m²` : '—',
-        'VALOR SAP:', obra.valorSap != null ? formatBRL(obra.valorSap) : '—',
-      ],
-      ['VALOR R$:', { content: formatBRL(valorRs), colSpan: 3, styles: { fontStyle: 'bold' } } as never],
-    ],
-  });
-
-  y = (doc.lastAutoTable?.finalY ?? y + 30) + 4;
-
-  // Faixa EVIDÊNCIAS
-  doc.setFillColor(...DBLUE);
-  doc.rect(MX, y, CONT_W, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(255, 255, 255);
-  doc.text('EVIDÊNCIAS FOTOGRÁFICAS', PAGE_W / 2, y + 4.1, { align: 'center' });
-  y += 9;
-
-  return y;
+function box(doc: jsPDF, x: number, y: number, w: number, h: number, fill: boolean) {
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(LINE_W);
+  if (fill) {
+    doc.setFillColor(...GRAY);
+    doc.rect(x, y, w, h, 'FD');
+  } else {
+    doc.rect(x, y, w, h, 'D');
+  }
 }
 
-function drawPlaceholder(doc: jsPDF, x: number, y: number) {
+/** Célula com rótulo (fundo cinza) + valor (fundo branco), valor centralizado. */
+function field(
+  doc: jsPDF,
+  label: string,
+  value: string,
+  lblX0: number, lblX1: number,
+  valX0: number, valX1: number,
+  top: number, bottom: number,
+) {
+  const h = bottom - top;
+  const baseline = top + h - 2.4;
+  // Rótulo (cinza)
+  box(doc, lblX0, top, lblX1 - lblX0, h, true);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.setTextColor(...BLACK);
+  doc.text(label, lblX0 + 2, baseline);
+  // Valor (branco, centralizado)
+  box(doc, valX0, top, valX1 - valX0, h, false);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(180, 180, 180);
-  doc.text('Sem foto', x + PHOTO_W / 2, y + PHOTO_H / 2, { align: 'center' });
-  doc.setTextColor(0, 0, 0);
+  doc.text(value, (valX0 + valX1) / 2, baseline, { align: 'center', maxWidth: valX1 - valX0 - 3 });
 }
 
-function drawBloco(doc: jsPDF, evidencia: CalcadaEvidencia, y: number): number {
-  const xR = MX + PHOTO_W + 4;
-
-  // Linha PG + rótulos ANTES / DEPOIS
-  doc.setFillColor(...LBLUE);
-  doc.rect(MX, y, PHOTO_W, 6, 'F');
-  doc.rect(xR, y, PHOTO_W, 6, 'F');
+/** Barra de seção cinza com título centralizado. */
+function sectionBar(doc: jsPDF, title: string, top: number, bottom: number) {
+  const h = bottom - top;
+  box(doc, X0, top, X1 - X0, h, true);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(...DBLUE);
-  const pgTxt = evidencia.pg ? `  (PG: ${evidencia.pg})` : '';
-  doc.text(`ANTES${pgTxt}`, MX + 2, y + 4);
-  doc.text(`DEPOIS${pgTxt}`, xR + 2, y + 4);
-  y += 6;
+  doc.setFontSize(7.2);
+  doc.setTextColor(...BLACK);
+  doc.text(title, CX, top + h - 2.4, { align: 'center' });
+}
 
-  // Áreas de foto
-  doc.setDrawColor(...GRAY);
-  doc.rect(MX, y, PHOTO_W, PHOTO_H);
-  doc.rect(xR, y, PHOTO_W, PHOTO_H);
+function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra) {
+  // Quadro do logo + título
+  box(doc, X0, 30, X1 - X0, 26, false);
+  doc.line(151, 30, 151, 56); // divisória logo|título
+  doc.addImage(logo, 'PNG', 54, 32, 65, 21);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.8);
+  doc.setTextColor(...BLACK);
+  doc.text('EVIDÊNCIA REPARO DE CALÇADA', (151 + X1) / 2, 47, { align: 'center' });
 
-  if (evidencia.fotoAntes) {
-    const fmt = evidencia.fotoAntes.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    try { doc.addImage(evidencia.fotoAntes, fmt, MX + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
-    catch { drawPlaceholder(doc, MX, y); }
-  } else {
-    drawPlaceholder(doc, MX, y);
+  // DADOS OBRA
+  sectionBar(doc, 'DADOS OBRA', 59, 68);
+  field(doc, 'PEP:', obra.pep, 37, 79, 79, 187, 71, 81);
+  field(doc, 'NOTA:', obra.nota, 187, 224, 224, 333, 71, 81);
+  field(doc, 'DISTRITAL:', obra.distrital, 333, 369, 369, 545, 71, 81);
+  field(doc, 'DESCRIÇÃO OBRA:', obra.descricaoObra, 37, 115, 115, 333, 81, 90);
+  field(doc, 'CIDADE:', obra.municipio, 333, 369, 369, 545, 81, 90);
+
+  // DADOS REPARO DE CALÇADAS
+  sectionBar(doc, 'DADOS REPARO DE CALÇADAS', 93, 103);
+  const valorSap = obra.valorSap ?? 0;
+  const valorRs = calcularValorRs(obra.quantidade, obra.valorSap);
+  const qtdTxt = obra.quantidade != null ? String(obra.quantidade) : '';
+  field(doc, 'QUANTIDADE:', qtdTxt, 37, 115, 115, 187, 105, 115);
+  field(doc, 'VALOR SAP:', formatBRL(valorSap), 187, 291, 291, 369, 105, 115);
+  field(doc, 'VALOR R$:', formatBRL(valorRs), 369, 441, 441, 545, 105, 115);
+
+  // EVIDENCIAS
+  sectionBar(doc, 'EVIDENCIAS', 118, 128);
+}
+
+function verticalLabel(doc: jsPDF, text: string, centerX: number, boxTop: number) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.setTextColor(...BLACK);
+  const letters = text.split('');
+  const step = 9.2;
+  const startY = boxTop + PHOTO_H / 2 - (letters.length - 1) * step / 2 + 2;
+  letters.forEach((ch, i) => {
+    doc.text(ch, centerX, startY + i * step, { align: 'center' });
+  });
+}
+
+function drawPhoto(doc: jsPDF, dataUrl: string, x0: number, x1: number, top: number) {
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(LINE_W);
+  doc.rect(x0, top, x1 - x0, PHOTO_H, 'D');
+  if (dataUrl) {
+    const fmt = dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+    try {
+      doc.addImage(dataUrl, fmt, x0 + 1, top + 1, x1 - x0 - 2, PHOTO_H - 2);
+    } catch {
+      // imagem inválida — deixa o quadro vazio
+    }
+  }
+}
+
+/** Desenha um bloco de evidência no slot indicado (0..3) da página. */
+function drawBlock(doc: jsPDF, ev: CalcadaEvidencia, slot: number) {
+  const pgTop = FIRST_PG_TOP + slot * BLOCK_PITCH;
+  const photoTop = pgTop + PHOTO_OFFSET;
+
+  // Linha PG (só na metade esquerda, como no modelo)
+  box(doc, X0, pgTop, ANTES_PH_R - X0, 10, false);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.setTextColor(...BLACK);
+  doc.text('PG:', X0 + 2, pgTop + 8);
+  if (ev.pg) {
+    doc.text(ev.pg, 171, pgTop + 8);
   }
 
-  if (evidencia.fotoDepois) {
-    const fmt = evidencia.fotoDepois.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    try { doc.addImage(evidencia.fotoDepois, fmt, xR + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
-    catch { drawPlaceholder(doc, xR, y); }
-  } else {
-    drawPlaceholder(doc, xR, y);
-  }
+  // Coluna rótulo ANTES (cinza) + foto ANTES
+  box(doc, X0, photoTop, ANTES_LBL_R - X0, PHOTO_H, true);
+  verticalLabel(doc, 'ANTES', (X0 + ANTES_LBL_R) / 2, photoTop);
+  drawPhoto(doc, ev.fotoAntes, ANTES_LBL_R, ANTES_PH_R, photoTop);
 
-  y += PHOTO_H + 4;
-  return y;
+  // Coluna rótulo DEPOIS (cinza) + foto DEPOIS
+  box(doc, ANTES_PH_R, photoTop, DEPOIS_LBL_R - ANTES_PH_R, PHOTO_H, true);
+  verticalLabel(doc, 'DEPOIS', (ANTES_PH_R + DEPOIS_LBL_R) / 2, photoTop);
+  drawPhoto(doc, ev.fotoDepois, DEPOIS_LBL_R, X1, photoTop);
 }
 
 export async function exportCalcadaToPdf(
@@ -150,28 +177,18 @@ export async function exportCalcadaToPdf(
     throw new Error('Adicione ao menos uma evidência antes de exportar.');
   }
 
-  const banner = await loadBannerBase64();
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' }) as DocEx;
+  const logo = await loadLogoBase64();
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as DocPt;
 
-  let y = MX;
-  y = drawHeader(doc, banner, obra, y);
-
-  for (const evidencia of preenchidas) {
-    if (y + BLOCO_H > PAGE_H - MX) {
+  for (let i = 0; i < preenchidas.length; i++) {
+    const slot = i % BLOCKS_PER_PAGE;
+    if (i > 0 && slot === 0) {
       doc.addPage();
-      y = MX;
     }
-    y = drawBloco(doc, evidencia, y);
-  }
-
-  // Rodapé numerado
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Página ${p} / ${totalPages}`, PAGE_W / 2, PAGE_H - 4, { align: 'center' });
+    if (slot === 0) {
+      drawHeader(doc, logo, obra);
+    }
+    drawBlock(doc, preenchidas[i]!, slot);
   }
 
   const fileName = buildCalcadaExportFileName(obra, 'pdf');
