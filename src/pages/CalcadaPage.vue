@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, h } from 'vue';
+import { ref, computed, onMounted, onUnmounted, h, resolveComponent } from 'vue';
 import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
 import { useCalcadaStore, evidenciaPreenchida } from 'src/stores/calcada';
@@ -199,48 +199,65 @@ import { exportCalcadaToPdf } from 'src/utils/calcada-pdf';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
 
-// ── Componente inline de célula de foto (evita repetição) ────────────────────
+// ── Componente inline de célula de foto (idêntico ao Desligamento) ───────────
 const PhotoCell = (props: {
   value: string; selected: boolean; dropTarget: boolean; dragging: boolean;
 }, { emit }: { emit: (e: string, ...args: unknown[]) => void }) => {
+  const QBtn = resolveComponent('QBtn');
+  const QIcon = resolveComponent('QIcon');
+
   const cls = [
     'evidencia-zone',
     props.value ? 'evidencia-zone--filled relative-position' : 'evidencia-zone--empty flex flex-center column',
-    { 'evidencia-zone--selected': props.selected, 'evidencia-zone--drop-target': props.dropTarget, 'evidencia-zone--dragging': props.dragging },
+    {
+      'evidencia-zone--selected': props.selected,
+      'evidencia-zone--drop-target': props.dropTarget,
+      'evidencia-zone--dragging': props.dragging,
+    },
   ];
-  const handlers = {
+
+  const baseAttrs = {
+    class: cls,
     tabindex: '0',
     onClick: (e: Event) => emit('select', e),
     onPaste: (e: Event) => emit('paste', e),
     onDragover: (e: Event) => emit('dragover', e),
     onDrop: (e: Event) => emit('drop', e),
   };
+
   if (props.value) {
-    return h('div', { ...handlers, title: 'Arraste para outra célula ou cole com Ctrl+V' }, [
+    return h('div', { ...baseAttrs, title: 'Arraste a imagem para outro quadrado ou cole com Ctrl+V' }, [
       h('img', {
-        src: props.value, draggable: 'true',
+        src: props.value,
+        draggable: 'true',
         class: 'evidencia-img evidencia-img--draggable',
-        style: 'width:100%; max-height:200px; object-fit:contain; border-radius:8px;',
+        style: 'width:100%; max-height:260px; object-fit:contain; border-radius:8px;',
         onDragstart: (e: Event) => emit('dragstart', e),
         onDragend: () => emit('dragend'),
       }),
-      h('button', {
-        class: 'foto-remove-btn',
-        onClick: (e: Event) => { e.stopPropagation(); emit('clear'); },
-      }, '✕'),
+      h(QBtn, {
+        icon: 'close',
+        round: true,
+        dense: true,
+        size: 'sm',
+        color: 'negative',
+        class: 'absolute-top-right q-ma-xs',
+        onClick: (e: MouseEvent) => { e.stopPropagation(); emit('clear'); },
+      }),
     ]);
   }
-  return h('div', { ...handlers, title: 'Selecione, cole (Ctrl+V) ou arraste uma imagem' }, [
+
+  return h('div', { ...baseAttrs, title: 'Selecione o quadrado, cole com Ctrl+V ou solte uma imagem arrastada' }, [
     h('button', {
-      type: 'button', class: 'evidencia-zone__upload-trigger',
-      onClick: (e: Event) => { e.stopPropagation(); emit('pick'); },
+      type: 'button',
+      class: 'evidencia-zone__upload-trigger',
+      'aria-label': 'Anexar imagem',
+      onClick: (e: MouseEvent) => { e.stopPropagation(); emit('pick'); },
     }, [
-      h('div', { class: 'column items-center' }, [
-        h('span', { class: 'text-h5', style: 'opacity:.4' }, '🖼'),
-        h('span', { class: 'text-grey-6 text-caption' }, 'Clique para anexar'),
-      ]),
+      h(QIcon, { name: 'add_photo_alternate', size: '40px', color: 'grey-5' }),
+      h('span', { class: 'text-grey-6 text-caption' }, 'Clique para anexar'),
     ]),
-    h('span', { class: 'evidencia-zone__paste-hint text-grey-6 text-caption' }, 'ou cole (Ctrl+V) ou arraste'),
+    h('span', { class: 'evidencia-zone__paste-hint text-grey-6 text-caption' }, 'ou selecione, cole (Ctrl+V) ou arraste'),
   ]);
 };
 
@@ -548,13 +565,7 @@ function handleReset() {
   font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.55;
 }
 
-:deep(.evidencia-zone--empty) { height: 200px; }
-:deep(.foto-remove-btn) {
-  position: absolute; top: 6px; right: 6px;
-  width: 24px; height: 24px; border-radius: 50%; border: none;
-  background: rgba(0, 0, 0, 0.5); color: #fff; cursor: pointer;
-  font-size: 12px; line-height: 1;
-}
+:deep(.evidencia-zone--empty) { height: 260px; }
 
 .servicos-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
