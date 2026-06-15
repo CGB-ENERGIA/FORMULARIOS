@@ -85,10 +85,26 @@ function fillObra(sheet: ExcelJS.Worksheet, obra: CalcadaObra) {
   sheet.getCell('Q8').value = calcularPepLimpo(obra.pep);
 }
 
-// Larguras das colunas da aba BANCO (idênticas ao modelo original).
+// Larguras das colunas da aba BANCO, dimensionadas para os títulos caberem em
+// uma única linha (sem quebra de texto).
 const BANCO_COL_WIDTHS = [
-  13.77, 9.33, 26, 11.33, 45.11, 18.22, 31.22, 23.89, 29.33, 22.22, 23.78, 20.66, 18.22,
+  12,  // A SETOR
+  10,  // B PI
+  26,  // C PEP
+  14,  // D NOTA
+  45,  // E DESCRITIVO
+  16,  // F DISTRITAL
+  16,  // G MUNICIPIO
+  34,  // H QUANTIDADE CALÇADA PARA REPARAR
+  20,  // I DATA PROGRAMAÇÃO
+  18,  // J QUANTIDADE DIAS
+  17,  // K REAL EXECUÇÃO
+  14,  // L EXECUTADO?
+  21,  // M EVIDÊNCIA ANEXADA?
 ];
+
+const BANCO_HEADER_ROW = 5;
+const BANCO_LAST_COL = 13;
 
 /**
  * Preenche a aba BANCO com a linha da obra atual.
@@ -133,6 +149,12 @@ function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: bo
   // Restaura as setas de filtro e as larguras das colunas (perdidas com a tabela).
   sheet.autoFilter = `A5:M${BANCO_LAST_ROW}`;
   BANCO_COL_WIDTHS.forEach((w, i) => { sheet.getColumn(i + 1).width = w; });
+
+  // Desativa a quebra de texto do cabeçalho para os títulos ficarem em 1 linha.
+  for (let c = 1; c <= BANCO_LAST_COL; c++) {
+    const cell = sheet.getCell(BANCO_HEADER_ROW, c);
+    cell.alignment = { ...cell.alignment, wrapText: false };
+  }
 }
 
 function insertEvidencia(
