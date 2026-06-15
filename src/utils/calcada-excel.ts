@@ -7,6 +7,7 @@ import { buildCalcadaExportFileName } from './export-helpers';
 
 const TEMPLATE_URL = publicAsset('template/CONTROLE_REPARO_CALCADAS.xlsm');
 const SHEET_ANEXO = 'GERAR ANEXO';
+const SHEET_BANCO = 'BANCO';
 
 /**
  * Posições dos 9 blocos de evidência no modelo (1-indexed).
@@ -146,6 +147,14 @@ export async function exportCalcadaToExcel(
   const preenchidas = evidencias.filter(evidenciaPreenchida);
   const usadas = preenchidas.slice(0, MAX_BLOCOS_EXCEL);
   usadas.forEach((evidencia, i) => insertEvidencia(workbook, anexo, evidencia, i));
+
+  // A aba BANCO é apenas o banco de dados de origem do modelo. Seus campos no
+  // anexo já foram preenchidos com valores diretos, então ela é removida do
+  // arquivo final — evita os #REF! que o ExcelJS gera ao reescrever a tabela.
+  const banco = workbook.getWorksheet(SHEET_BANCO);
+  if (banco) {
+    workbook.removeWorksheet(banco.id);
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   const fileName = buildCalcadaExportFileName(obra, 'xlsx');
