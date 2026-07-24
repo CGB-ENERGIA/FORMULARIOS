@@ -9,11 +9,20 @@
         <h1 class="page-header__title">Cadastro</h1>
         <p class="page-header__subtitle">
           Preencha os campos da solicitação de serviço e exporte no layout original.
+          Cada cliente vira uma aba separada no Excel.
         </p>
       </header>
 
       <div class="action-bar action-bar--top q-mb-md">
         <div class="action-bar__actions action-bar__actions--end">
+          <q-btn
+            outline
+            color="primary"
+            icon="person_add"
+            label="Adicionar cliente"
+            no-caps
+            @click="handleAddCliente"
+          />
           <q-btn outline color="negative" icon="restart_alt" label="LIMPAR" no-caps @click="handleReset" />
           <q-btn
             unelevated
@@ -26,11 +35,37 @@
         </div>
       </div>
 
+      <div class="cliente-tabs q-mb-md">
+        <q-btn
+          v-for="(cliente, index) in clientes"
+          :key="`cliente-tab-${index}`"
+          :outline="ativo !== index"
+          :unelevated="ativo === index"
+          color="primary"
+          no-caps
+          dense
+          class="cliente-tabs__btn"
+          @click="selectCliente(index)"
+        >
+          <span class="cliente-tabs__label">{{ clienteTabLabel(cliente, index) }}</span>
+          <q-icon
+            v-if="clientes.length > 1"
+            name="close"
+            size="16px"
+            class="q-ml-xs"
+            @click.stop="handleRemoveCliente(index)"
+          />
+        </q-btn>
+      </div>
+
       <q-card flat class="premium-card q-mb-md">
         <div class="premium-card__header">
           <div class="premium-card__header-title">
             <div class="premium-card__header-icon"><q-icon name="badge" size="22px" /></div>
             Dados do cliente
+            <span class="text-caption text-grey-7 q-ml-sm">
+              {{ ativo + 1 }} / {{ clientes.length }}
+            </span>
           </div>
         </div>
         <q-card-section class="premium-card__body">
@@ -231,12 +266,17 @@ import { useQuasar } from 'quasar';
 import { ref } from 'vue';
 import { useCadastroStore } from 'src/stores/cadastro';
 import { exportCadastroToExcel } from 'src/utils/cadastro-excel';
-import { FASE_OPTIONS, getCadastroExportErrors, PADRAO_OPTIONS } from 'src/utils/cadastro-helpers';
+import {
+  clienteTabLabel,
+  FASE_OPTIONS,
+  getCadastroClientesExportErrors,
+  PADRAO_OPTIONS,
+} from 'src/utils/cadastro-helpers';
 
 const $q = useQuasar();
 const store = useCadastroStore();
-const { form } = storeToRefs(store);
-const { resetForm } = store;
+const { form, clientes, ativo } = storeToRefs(store);
+const { selectCliente, addCliente, removeCliente, resetForm } = store;
 
 const validacaoAtiva = ref(false);
 
@@ -250,10 +290,34 @@ const faseOptions = FASE_OPTIONS.map((opt) => ({
   value: opt.value,
 }));
 
+function handleAddCliente() {
+  addCliente();
+  validacaoAtiva.value = false;
+  $q.notify({
+    type: 'positive',
+    message: `Cliente ${clientes.value.length} adicionado. CC, Nome, Padrão, Nº Poste e Med Inst foram limpos.`,
+  });
+}
+
+function handleRemoveCliente(index: number) {
+  if (clientes.value.length <= 1) return;
+
+  $q.dialog({
+    title: 'Remover cliente',
+    message: `Deseja remover ${clienteTabLabel(clientes.value[index]!, index)}?`,
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    removeCliente(index);
+    validacaoAtiva.value = false;
+    $q.notify({ type: 'info', message: 'Cliente removido.' });
+  });
+}
+
 function handleReset() {
   $q.dialog({
     title: 'Limpar formulário',
-    message: 'Deseja apagar todos os dados preenchidos?',
+    message: 'Deseja apagar todos os clientes e dados preenchidos?',
     cancel: true,
     persistent: true,
   }).onOk(() => {
@@ -265,7 +329,7 @@ function handleReset() {
 
 async function handleExportExcel() {
   validacaoAtiva.value = true;
-  const errors = getCadastroExportErrors(form.value);
+  const errors = getCadastroClientesExportErrors(clientes.value);
   if (errors.length > 0) {
     $q.notify({ type: 'negative', message: errors[0] });
     return;
@@ -273,9 +337,12 @@ async function handleExportExcel() {
 
   const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Excel…', timeout: 0 });
   try {
-    const fileName = await exportCadastroToExcel(form.value);
+    const fileName = await exportCadastroToExcel(clientes.value);
     dismiss();
-    $q.notify({ type: 'positive', message: `Arquivo ${fileName} exportado com sucesso.` });
+    $q.notify({
+      type: 'positive',
+      message: `Arquivo ${fileName} exportado com ${clientes.value.length} aba(s).`,
+    });
   } catch (error) {
     dismiss();
     $q.notify({
@@ -294,5 +361,22 @@ async function handleExportExcel() {
 .action-bar__actions--end {
   width: 100%;
   justify-content: flex-end;
+}
+
+.cliente-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cliente-tabs__btn {
+  max-width: 100%;
+}
+
+.cliente-tabs__label {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

@@ -54,7 +54,6 @@ function setPadrao(sheet: ExcelJS.Worksheet, padrao: PadraoEntrada) {
 }
 
 function fillForm(sheet: ExcelJS.Worksheet, form: CadastroForm) {
-  // D3 = rótulo "CC"; valor vai ao lado (E3)
   setCell(sheet, 'E3', form.cc.trim() || null);
   setCell(sheet, 'B4', form.pep.trim() || null);
   setCell(sheet, 'B5', form.nome.trim() || null);
@@ -73,7 +72,6 @@ function fillForm(sheet: ExcelJS.Worksheet, form: CadastroForm) {
   setLabeled(sheet, 'A37', 'DATA FABR: ', form.dataFabr);
   setLabeled(sheet, 'A38', 'Nº SÉRIE: ', form.numSerie);
 
-  // C46 = rótulo; nome vai na linha de baixo (C47)
   setCell(sheet, 'C47', form.nomeResponsavel.trim() || null);
 
   setCell(sheet, 'A49', form.dataExecucao.trim() || null);
@@ -81,20 +79,107 @@ function fillForm(sheet: ExcelJS.Worksheet, form: CadastroForm) {
   setCell(sheet, 'E49', form.empresa.trim() || null);
 }
 
-export async function exportCadastroToExcel(form: CadastroForm) {
+function sanitizeSheetName(value: string): string {
+  return value.replace(/[:\\/?*\[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 31);
+}
+
+function uniqueSheetNames(clientes: CadastroForm[]): string[] {
+  const used = new Set<string>();
+
+  return clientes.map((form, index) => {
+    const base =
+      sanitizeSheetName(form.nome) ||
+      sanitizeSheetName(form.cc ? `CC ${form.cc}` : '') ||
+      `Cliente ${index + 1}`;
+
+    let name = base.slice(0, 31);
+    let suffix = 2;
+    while (used.has(name.toLowerCase())) {
+      const tag = ` ${suffix}`;
+      name = `${base.slice(0, Math.max(1, 31 - tag.length))}${tag}`;
+      suffix += 1;
+    }
+
+    used.add(name.toLowerCase());
+    return name;
+  });
+}
+
+function copyWorksheet(source: ExcelJS.Worksheet, target: ExcelJS.Worksheet) {
+  target.properties = { ...source.properties };
+  target.pageSetup = JSON.parse(JSON.stringify(source.pageSetup ?? {}));
+  target.views = source.views ? JSON.parse(JSON.stringify(source.views)) : [];
+
+  source.columns.forEach((col, index) => {
+    const targetCol = target.getColumn(index + 1);
+    if (col.width != null) targetCol.width = col.width;
+    if (col.hidden != null) targetCol.hidden = col.hidden;
+  });
+
+  source.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const targetRow = target.getRow(rowNumber);
+    if (row.height != null) targetRow.height = row.height;
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const targetCell = targetRow.getCell(colNumber);
+      targetCell.value = cell.value;
+      targetCell.style = JSON.parse(JSON.stringify(cell.style ?? {}));
+      if (cell.numFmt) targetCell.numFmt = cell.numFmt;
+    });
+    targetRow.commit();
+  });
+
+  const merges = (source.model?.merges ?? []) as string[];
+  merges.forEach((range) => {
+    try {
+      target.mergeCells(range);
+    } catch {
+      // Ignora merges já existentes.
+    }
+  });
+}
+
+async function createFilledSheetClone(
+  workbook: ExcelJS.Workbook,
+  templateBuffer: ArrayBuffer,
+  sheetName: string,
+): Promise<ExcelJS.Worksheet> {
+  const tempWorkbook = new ExcelJS.Workbook();
+  await tempWorkbook.xlsx.load(templateBuffer);
+  const source = tempWorkbook.getWorksheet(SHEET_NAME);
+  if (!source) {
+    throw new Error('Aba CADASTRO não encontrada no modelo.');
+  }
+
+  const target = workbook.addWorksheet(sheetName);
+  copyWorksheet(source, target);
+  return target;
+}
+
+export async function exportCadastroToExcel(clientes: CadastroForm[]) {
+  if (clientes.length === 0) {
+    throw new Error('Nenhum cliente para exportar.');
+  }
+
   const templateBuffer = await loadTemplate();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(templateBuffer);
 
-  const sheet = workbook.getWorksheet(SHEET_NAME);
-  if (!sheet) {
+  const firstSheet = workbook.getWorksheet(SHEET_NAME);
+  if (!firstSheet) {
     throw new Error('Aba CADASTRO não encontrada no modelo.');
   }
 
-  fillForm(sheet, form);
+  const sheetNames = uniqueSheetNames(clientes);
+  firstSheet.name = sheetNames[0]!;
+  fillForm(firstSheet, clientes[0]!);
+
+  for (let index = 1; index < clientes.length; index++) {
+    const sheet = await createFilledSheetClone(workbook, templateBuffer, sheetNames[index]!);
+    fillForm(sheet, clientes[index]!);
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const fileName = buildCadastroExportFileName(form);
+  const fileName = buildCadastroExportFileName(clientes[0]!);
   downloadBuffer(buffer as ArrayBuffer, fileName);
   return fileName;
 }
