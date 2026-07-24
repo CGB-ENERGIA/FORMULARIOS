@@ -2,6 +2,7 @@ import type { ObraInfo } from '../stores/consumidores';
 import type { ArrastoObra } from '../stores/arrasto';
 import type { DesligamentoObra } from '../stores/desligamento';
 import type { CalcadaObra } from '../stores/calcada';
+import type { CadastroForm } from '../stores/cadastro';
 
 export function sanitizeFileNamePart(value: string): string {
   return value.trim().replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ');
@@ -28,4 +29,9 @@ export function buildArrastoExportFileName(obra: ArrastoObra, extension: 'xlsm' 
 export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' | 'pdf'): string {
   const pep = sanitizeFileNamePart(obra.pep) || 'calcada';
   return `ANEXO REPARO DE CALÇADA - ${pep}.${extension}`;
+}
+
+export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' = 'xlsx'): string {
+  const pep = sanitizeFileNamePart(form.pep) || sanitizeFileNamePart(form.nome) || 'cadastro';
+  return `CADASTRO - ${pep}.${extension}`;
 }

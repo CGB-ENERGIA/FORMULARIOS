@@ -46,6 +46,12 @@ export const navItems: NavItem[] = [
     route: '/arrasto',
   },
   {
+    title: 'CADASTRO',
+    caption: 'Solicitação de serviço',
+    icon: 'assignment_ind',
+    route: '/cadastro',
+  },
+  {
     title: 'PODA',
     caption: 'Relatório de evidências',
     icon: 'forest',

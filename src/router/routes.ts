@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'ARRASTO' },
       },
       {
+        path: 'cadastro',
+        component: () => import('pages/CadastroPage.vue'),
+        meta: { title: 'CADASTRO' },
+      },
+      {
         path: 'historico',
         component: () => import('pages/HistoricoPage.vue'),
         meta: { title: 'HISTÓRICO' },
