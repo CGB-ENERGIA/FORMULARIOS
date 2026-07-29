@@ -11,11 +11,18 @@ bun install
 # Quasar / Vite
 .quasar/
 dist/
+.vercel/
 
 # Lockfiles from other package managers
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Local / temp
+tmp-*/
+tmp-*.zip
+test-*.xlsx
+test-*.xlsm
+scripts/
 
 # Editor
 .idea/
