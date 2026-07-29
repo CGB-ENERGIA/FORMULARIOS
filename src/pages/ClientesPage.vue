@@ -2,6 +2,9 @@
   <q-page class="page-shell clientes-page">
     <div class="page-shell__inner clientes-page__inner">
       <h1 class="clientes-page__title">Clientes</h1>
+      <p class="clientes-page__lead">
+        Módulo isolado: preenchimento, pesquisa, arquivos gerados e controle de medidores.
+      </p>
 
       <q-tabs
         v-model="tab"
@@ -15,7 +18,7 @@
       >
         <q-tab name="consumidores" icon="groups" label="Relação na obra" no-caps />
         <q-tab name="cadastro" icon="assignment_ind" label="Solicitação de serviço" no-caps />
-        <q-tab name="consultar" icon="manage_search" label="Consultar" no-caps />
+        <q-tab name="consultar" icon="fact_check" label="Controle" no-caps />
       </q-tabs>
 
       <q-tab-panels
@@ -144,12 +147,18 @@ onMounted(() => {
 }
 
 .clientes-page__title {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   font-family: var(--font-display, inherit);
   font-size: clamp(1.35rem, 2.5vw, 1.7rem);
   font-weight: 700;
   line-height: 1.2;
   color: var(--text);
+}
+
+.clientes-page__lead {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--text-secondary, #94a3b8);
 }
 
 .clientes-tabs {

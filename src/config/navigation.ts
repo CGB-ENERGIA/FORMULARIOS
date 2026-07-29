@@ -53,7 +53,7 @@ export const navItems: NavItem[] = [
   },
   {
     title: 'CLIENTES',
-    caption: 'Relação + cadastro',
+    caption: 'Relação, cadastro e controle',
     icon: 'groups',
     route: '/clientes',
     category: 'operacao',

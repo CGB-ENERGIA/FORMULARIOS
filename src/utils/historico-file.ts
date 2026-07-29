@@ -19,10 +19,27 @@ export interface HistoricoConsumidor {
   padrao: string;
   posteLigacao: string;
   dataLigacao: string;
+  /** Controle de medidor baixado (módulo Clientes). */
+  medidorBaixado?: boolean;
+}
+
+export interface HistoricoExportacaoLegado {
+  id: string;
+  exportedAt: string;
+  totalConsumidores: number;
+  descricaoObra: string;
+  relatorios: Array<{
+    id?: string;
+    formato: string;
+    nomeArquivo: string;
+    mimeType?: string;
+    tamanhoBytes?: number;
+    armazenado?: boolean;
+  }>;
 }
 
 export interface HistoricoEntry {
-  id: string; // ISO timestamp — chave única
+  id: string; // ISO timestamp — chave única (primeira criação do PEP)
   distrital: DistritalCode;
   descricaoObra: string;
   elementoPep: string;
@@ -31,6 +48,10 @@ export interface HistoricoEntry {
   localidade: string;
   totalConsumidores: number;
   consumidores: HistoricoConsumidor[];
+  /** Última atualização (ISO). */
+  updatedAt?: string;
+  /** Histórico de exportações do mesmo PEP. */
+  historicoExportacoes?: HistoricoExportacaoLegado[];
 }
 
 // ─── IndexedDB ────────────────────────────────────────────────────────────────

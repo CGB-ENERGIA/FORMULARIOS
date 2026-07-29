@@ -415,11 +415,12 @@ async function handleExport() {
   });
 
   try {
-    const { consumidoresFileName, cadastroFileName } = await exportClientesPadrao(
-      consumidoresStore.obra,
-      consumidoresStore.consumidores,
-      clientes.value,
-    );
+    const { consumidoresFileName, cadastroFileName, pdfBlob, excelBlob } =
+      await exportClientesPadrao(
+        consumidoresStore.obra,
+        consumidoresStore.consumidores,
+        clientes.value,
+      );
     dismiss();
     $q.notify({
       type: 'positive',
@@ -434,15 +435,15 @@ async function handleExport() {
           distrital: consumidoresStore.distrital as DistritalCode,
           obra: consumidoresStore.obra,
           consumidores: consumidoresStore.consumidores,
-          relatorios: [
-            { formato: 'pdf', nome_arquivo: consumidoresFileName },
-            { formato: 'excel', nome_arquivo: cadastroFileName },
+          arquivos: [
+            { formato: 'pdf', nome_arquivo: consumidoresFileName, blob: pdfBlob },
+            { formato: 'excel', nome_arquivo: cadastroFileName, blob: excelBlob },
           ],
         });
         $q.notify({
           type: 'info',
           icon: 'manage_search',
-          message: 'Registro salvo em Consultar.',
+          message: 'Registro atualizado no Controle (mesmo PEP).',
           timeout: 2200,
         });
       } catch (error) {

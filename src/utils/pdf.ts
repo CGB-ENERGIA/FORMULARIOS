@@ -3,7 +3,7 @@ import { autoTable } from 'jspdf-autotable';
 import type { Consumidor, ObraInfo } from '../stores/consumidores';
 import { getConsumidoresPreenchidos } from './consumidor-helpers';
 import { buildExportFileName } from './export-helpers';
-import { savePdfWithWatermark } from './pdf-watermark';
+import { buildPdfBlobWithWatermark, savePdfWithWatermark } from './pdf-watermark';
 
 import { publicAsset } from './assets';
 
@@ -205,6 +205,16 @@ export async function exportToPdf(obra: ObraInfo, consumidores: Consumidor[]) {
   const doc = await buildConsumidoresPdfDocument(obra, consumidores);
   const fileName = buildExportFileName(obra, 'pdf');
   return savePdfWithWatermark(doc, fileName);
+}
+
+/** Gera PDF + blob sem download (para persistir no módulo Clientes). */
+export async function buildConsumidoresPdfBlob(
+  obra: ObraInfo,
+  consumidores: Consumidor[],
+): Promise<{ blob: Blob; fileName: string }> {
+  const doc = await buildConsumidoresPdfDocument(obra, consumidores);
+  const fileName = buildExportFileName(obra, 'pdf');
+  return buildPdfBlobWithWatermark(doc, fileName);
 }
 
 interface FotoSlot {

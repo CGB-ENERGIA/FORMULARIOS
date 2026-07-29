@@ -1,6 +1,15 @@
 <template>
   <div class="page-shell clientes-panel">
     <div class="page-shell__inner">
+      <header class="controle-header">
+        <div>
+          <h2 class="controle-header__title">Controle de obras</h2>
+          <p class="controle-header__subtitle">
+            Pesquisa, arquivos gerados (PDF/Excel) e status de medidores baixados.
+          </p>
+        </div>
+      </header>
+
       <DistritalPicker
         v-model="distritalSelecionada"
         allow-all
@@ -12,6 +21,9 @@
         <div class="consultar-toolbar__count">
           <template v-if="distritalSelecionada">{{ distritalSelecionada }} · </template>
           <strong>{{ filteredEntries.length }}</strong> registro(s)
+          <span v-if="medidorStats.total" class="consultar-toolbar__meters">
+            · {{ medidorStats.baixados }}/{{ medidorStats.total }} medidores baixados
+          </span>
         </div>
         <div class="search-bar">
           <q-icon name="search" size="18px" class="search-bar__icon" />
@@ -19,7 +31,7 @@
             v-model="searchQuery"
             class="search-bar__input"
             type="text"
-            placeholder="Buscar por obra, PEP, município..."
+            placeholder="Buscar por obra, PEP, município, cliente ou medidor..."
           />
           <q-btn
             v-if="searchQuery"
@@ -30,6 +42,20 @@
             size="xs"
             class="search-bar__clear"
             @click="searchQuery = ''"
+          />
+        </div>
+        <div class="medidor-filter">
+          <q-btn
+            v-for="opt in medidorFiltroOptions"
+            :key="opt.value"
+            dense
+            unelevated
+            no-caps
+            size="sm"
+            :color="medidorFiltro === opt.value ? 'primary' : undefined"
+            :outline="medidorFiltro !== opt.value"
+            :label="opt.label"
+            @click="medidorFiltro = opt.value"
           />
         </div>
         <q-btn
@@ -53,10 +79,10 @@
       <div v-else-if="filteredEntries.length === 0" class="consultar-results empty-state">
         <q-icon name="inbox" size="56px" color="grey-4" />
         <div class="text-subtitle1 text-grey-6">
-          {{ searchQuery ? 'Nenhum registro encontrado.' : 'Nenhum registro salvo.' }}
+          {{ searchQuery || medidorFiltro !== 'todos' ? 'Nenhum registro encontrado.' : 'Nenhum registro salvo.' }}
         </div>
-        <div v-if="!searchQuery" class="text-caption text-grey-5">
-          Os registros aparecem ao exportar na Solicitação de serviço.
+        <div v-if="!searchQuery && medidorFiltro === 'todos'" class="text-caption text-grey-5">
+          Os registros e arquivos aparecem ao exportar na Solicitação de serviço.
         </div>
       </div>
 
@@ -75,11 +101,17 @@
                 <q-badge color="primary" outline :label="entry.distrital" class="q-ml-xs" />
                 <q-badge
                   v-for="rel in entry.relatorios"
-                  :key="`${entry.id}-${rel.nome_arquivo}`"
-                  color="teal"
+                  :key="`${entry.id}-${rel.id || rel.nome_arquivo}`"
+                  :color="rel.armazenado ? 'teal' : 'grey'"
                   :label="rel.formato.toUpperCase()"
                   class="q-ml-xs"
-                />
+                >
+                  <q-tooltip>
+                    {{ rel.nome_arquivo }}
+                    <template v-if="rel.armazenado"> · armazenado</template>
+                    <template v-else> · só metadado</template>
+                  </q-tooltip>
+                </q-badge>
               </div>
               <div class="historico-card__meta">
                 <span><q-icon name="today" size="14px" /> {{ entry.data_conclusao || '—' }}</span>
@@ -91,12 +123,17 @@
                   :label="`${entry.total_consumidores} consumidores`"
                   class="q-ml-xs"
                 />
+                <q-badge
+                  :color="entryMedidorStats(entry).pendentes ? 'orange' : 'positive'"
+                  outline
+                  :label="`${entryMedidorStats(entry).baixados}/${entry.consumidores.length} baixados`"
+                  class="q-ml-xs"
+                />
               </div>
               <div class="text-caption text-grey-5 q-mt-xs">
-                Salvo em {{ formatDate(entry.created_at) }}
-                <template v-if="entry.relatorios.length">
-                  ·
-                  {{ entry.relatorios.map((r) => r.nome_arquivo).join(' · ') }}
+                Atualizado em {{ formatDate(entry.updated_at || entry.created_at) }}
+                <template v-if="entry.historico_exportacoes.length > 1">
+                  · {{ entry.historico_exportacoes.length }} exportações
                 </template>
               </div>
             </div>
@@ -110,7 +147,7 @@
                 size="sm"
                 @click.stop="handleDeleteEntry(entry)"
               >
-                <q-tooltip>Remover registro</q-tooltip>
+                <q-tooltip>Remover registro e arquivos</q-tooltip>
               </q-btn>
               <q-icon
                 :name="expandedIds.has(entry.id) ? 'expand_less' : 'expand_more'"
@@ -141,14 +178,124 @@
                     <span class="obra-details__label">Data Conclusão</span>
                     <span class="obra-details__value">{{ entry.data_conclusao || '—' }}</span>
                   </div>
-                  <div class="obra-details__item">
-                    <span class="obra-details__label">Formulário</span>
-                    <span class="obra-details__value">{{ entry.formulario }}</span>
+                </div>
+              </q-card-section>
+
+              <q-separator />
+              <q-card-section class="q-pa-md">
+                <div class="arquivos-block__title">Arquivos gerados (atual)</div>
+                <div v-if="!entry.relatorios.length" class="text-caption text-grey-5">
+                  Nenhum arquivo vinculado a este registro.
+                </div>
+                <div v-else class="arquivos-list">
+                  <div
+                    v-for="rel in entry.relatorios"
+                    :key="rel.id || rel.nome_arquivo"
+                    class="arquivo-row"
+                  >
+                    <div class="arquivo-row__info">
+                      <q-icon
+                        :name="rel.formato === 'pdf' ? 'picture_as_pdf' : 'table_view'"
+                        :color="rel.formato === 'pdf' ? 'negative' : 'positive'"
+                        size="20px"
+                      />
+                      <div>
+                        <div class="arquivo-row__name">{{ rel.nome_arquivo }}</div>
+                        <div class="text-caption text-grey-5">
+                          {{ rel.formato.toUpperCase() }}
+                          <template v-if="rel.tamanho_bytes">
+                            · {{ formatBytes(rel.tamanho_bytes) }}
+                          </template>
+                          · {{ rel.armazenado ? 'disponível para baixar' : 'metadado apenas' }}
+                        </div>
+                      </div>
+                    </div>
+                    <q-btn
+                      dense
+                      unelevated
+                      no-caps
+                      color="primary"
+                      icon="download"
+                      label="Baixar"
+                      :disable="!rel.armazenado || !rel.id"
+                      :loading="downloadingId === rel.id"
+                      @click="handleDownloadArquivo(rel)"
+                    />
                   </div>
                 </div>
               </q-card-section>
+
+              <q-separator />
+              <q-card-section class="q-pa-md">
+                <div class="arquivos-block__title">
+                  Histórico do PEP
+                  <span v-if="entry.elemento_pep" class="arquivos-block__pep">
+                    {{ entry.elemento_pep }}
+                  </span>
+                </div>
+                <div v-if="entry.historico_exportacoes.length === 0" class="text-caption text-grey-5">
+                  Nenhuma exportação registrada.
+                </div>
+                <div v-else class="historico-list">
+                  <div
+                    v-for="(evento, idx) in entry.historico_exportacoes"
+                    :key="evento.id"
+                    class="historico-evento"
+                  >
+                    <div class="historico-evento__head">
+                      <div>
+                        <strong>{{ formatDate(evento.exported_at) }}</strong>
+                        <q-badge
+                          v-if="idx === 0"
+                          color="primary"
+                          label="Atual"
+                          class="q-ml-sm"
+                          outline
+                        />
+                      </div>
+                      <span class="text-caption text-grey-5">
+                        {{ evento.total_consumidores }} consumidor(es)
+                      </span>
+                    </div>
+                    <div v-if="evento.descricao_obra" class="text-caption q-mb-sm">
+                      {{ evento.descricao_obra }}
+                    </div>
+                    <div class="arquivos-list">
+                      <div
+                        v-for="rel in evento.relatorios"
+                        :key="`${evento.id}-${rel.id || rel.nome_arquivo}`"
+                        class="arquivo-row arquivo-row--compact"
+                      >
+                        <div class="arquivo-row__info">
+                          <q-icon
+                            :name="rel.formato === 'pdf' ? 'picture_as_pdf' : 'table_view'"
+                            :color="rel.formato === 'pdf' ? 'negative' : 'positive'"
+                            size="18px"
+                          />
+                          <span class="arquivo-row__name">{{ rel.nome_arquivo }}</span>
+                        </div>
+                        <q-btn
+                          dense
+                          flat
+                          round
+                          color="primary"
+                          icon="download"
+                          size="sm"
+                          :disable="!rel.armazenado || !rel.id"
+                          :loading="downloadingId === rel.id"
+                          @click="handleDownloadArquivo(rel)"
+                        >
+                          <q-tooltip>Baixar</q-tooltip>
+                        </q-btn>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+
               <q-separator />
               <q-card-section class="q-pa-sm">
+                <div class="arquivos-block__title q-px-sm q-pb-sm">Medidores</div>
                 <q-table
                   flat
                   dense
@@ -160,7 +307,19 @@
                   virtual-scroll
                   :virtual-scroll-item-size="44"
                   style="max-height: 360px"
-                />
+                >
+                  <template #body-cell-medidor_baixado="props">
+                    <q-td :props="props">
+                      <q-toggle
+                        dense
+                        color="positive"
+                        :model-value="props.row.medidor_baixado"
+                        :label="props.row.medidor_baixado ? 'Baixado' : 'Pendente'"
+                        @update:model-value="(v: boolean) => toggleMedidor(entry, props.row.numero_medidor, v)"
+                      />
+                    </q-td>
+                  </template>
+                </q-table>
               </q-card-section>
             </div>
           </q-slide-transition>
@@ -177,10 +336,16 @@ import type { QTableColumn } from 'quasar';
 import DistritalPicker from 'src/components/clientes/DistritalPicker.vue';
 import type { DistritalCode } from 'src/utils/historico-file';
 import {
-  attachRelatorios,
+  downloadBlob,
+  formatBytes,
   getRegistrosRepository,
 } from 'src/services/registros';
-import type { FormRegistro } from 'src/services/registros/types';
+import type {
+  FormRegistro,
+  MedidorFiltro,
+  RegistroConsumidor,
+  RelatorioGerado,
+} from 'src/services/registros/types';
 
 const $q = useQuasar();
 const repo = getRegistrosRepository();
@@ -189,7 +354,15 @@ const distritalSelecionada = ref<DistritalCode | null>(null);
 const entries = ref<FormRegistro[]>([]);
 const loading = ref(false);
 const searchQuery = ref('');
+const medidorFiltro = ref<MedidorFiltro>('todos');
 const expandedIds = ref<Set<string>>(new Set());
+const downloadingId = ref<string | null>(null);
+
+const medidorFiltroOptions: Array<{ value: MedidorFiltro; label: string }> = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'pendentes', label: 'Pendentes' },
+  { value: 'baixados', label: 'Baixados' },
+];
 
 const consumidorColumns: QTableColumn[] = [
   { name: 'nome', label: 'NOME', field: 'nome', align: 'left' },
@@ -198,24 +371,51 @@ const consumidorColumns: QTableColumn[] = [
   { name: 'padrao', label: 'PADRÃO', field: 'padrao', align: 'center' },
   { name: 'poste_ligacao', label: 'POSTE', field: 'poste_ligacao', align: 'left' },
   { name: 'data_ligacao', label: 'DATA', field: 'data_ligacao', align: 'center' },
+  {
+    name: 'medidor_baixado',
+    label: 'STATUS',
+    field: 'medidor_baixado',
+    align: 'center',
+  },
 ];
+
+function entryMedidorStats(entry: FormRegistro) {
+  const baixados = entry.consumidores.filter((c) => c.medidor_baixado).length;
+  return {
+    baixados,
+    pendentes: entry.consumidores.length - baixados,
+  };
+}
+
+const medidorStats = computed(() => {
+  const all = entries.value.flatMap((e) => e.consumidores);
+  const baixados = all.filter((c) => c.medidor_baixado).length;
+  return { total: all.length, baixados };
+});
 
 const filteredEntries = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return entries.value;
-  return entries.value.filter((entry) =>
-    [
+  return entries.value.filter((entry) => {
+    if (medidorFiltro.value === 'pendentes') {
+      if (!entry.consumidores.some((c) => !c.medidor_baixado)) return false;
+    } else if (medidorFiltro.value === 'baixados') {
+      if (!entry.consumidores.some((c) => c.medidor_baixado)) return false;
+    }
+
+    if (!q) return true;
+    return [
       entry.descricao_obra,
       entry.elemento_pep,
       entry.municipio,
       entry.localidade,
       entry.distrital,
       ...entry.relatorios.map((r) => r.nome_arquivo),
+      ...entry.consumidores.flatMap((c) => [c.nome, c.numero_medidor]),
     ]
       .join(' ')
       .toLowerCase()
-      .includes(q),
-  );
+      .includes(q);
+  });
 });
 
 function formatDate(iso: string): string {
@@ -231,11 +431,33 @@ function toggleEntry(id: string) {
   expandedIds.value = next;
 }
 
+function normalizeRelatorio(rel: RelatorioGerado): RelatorioGerado {
+  return {
+    id: rel.id ?? '',
+    formato: rel.formato === 'excel' ? 'excel' : 'pdf',
+    nome_arquivo: rel.nome_arquivo,
+    mime_type: rel.mime_type ?? '',
+    tamanho_bytes: rel.tamanho_bytes ?? 0,
+    armazenado: Boolean(rel.armazenado && rel.id),
+  };
+}
+
 async function loadEntries() {
   loading.value = true;
   try {
     const list = await repo.list(distritalSelecionada.value);
-    entries.value = list.map(attachRelatorios);
+    entries.value = list.map((entry) => ({
+      ...entry,
+      updated_at: entry.updated_at || entry.created_at,
+      historico_exportacoes: entry.historico_exportacoes ?? [],
+      relatorios: entry.relatorios.map(normalizeRelatorio),
+      consumidores: entry.consumidores.map(
+        (c): RegistroConsumidor => ({
+          ...c,
+          medidor_baixado: Boolean(c.medidor_baixado),
+        }),
+      ),
+    }));
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -252,17 +474,68 @@ function onDistritalChange(value: DistritalCode | null) {
   void loadEntries();
 }
 
+async function handleDownloadArquivo(rel: RelatorioGerado) {
+  if (!rel.id || !rel.armazenado) {
+    $q.notify({ type: 'warning', message: 'Arquivo não está armazenado neste dispositivo.' });
+    return;
+  }
+  downloadingId.value = rel.id;
+  try {
+    const arquivo = await repo.getArquivo(rel.id);
+    if (!arquivo) {
+      $q.notify({ type: 'negative', message: 'Arquivo não encontrado no armazenamento local.' });
+      return;
+    }
+    downloadBlob(arquivo.blob, arquivo.nome_arquivo);
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error instanceof Error ? error.message : 'Erro ao baixar arquivo.',
+    });
+  } finally {
+    downloadingId.value = null;
+  }
+}
+
+async function toggleMedidor(
+  entry: FormRegistro,
+  numeroMedidor: string,
+  medidorBaixado: boolean,
+) {
+  try {
+    await repo.updateConsumidorMedidor(
+      entry.distrital,
+      entry.id,
+      numeroMedidor,
+      medidorBaixado,
+    );
+    const target = entries.value.find((e) => e.id === entry.id);
+    if (target) {
+      target.consumidores = target.consumidores.map((c) =>
+        c.numero_medidor === numeroMedidor
+          ? { ...c, medidor_baixado: medidorBaixado }
+          : c,
+      );
+    }
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error instanceof Error ? error.message : 'Erro ao atualizar medidor.',
+    });
+  }
+}
+
 function handleDeleteEntry(entry: FormRegistro) {
   $q.dialog({
     title: 'Remover registro',
-    message: `Remover o registro de "${entry.descricao_obra || entry.elemento_pep || entry.id}"?`,
+    message: `Remover o registro e os arquivos de "${entry.descricao_obra || entry.elemento_pep || entry.id}"?`,
     cancel: true,
     persistent: true,
   }).onOk(async () => {
     try {
       await repo.remove(entry.distrital, entry.id);
       await loadEntries();
-      $q.notify({ type: 'info', message: 'Registro removido.' });
+      $q.notify({ type: 'info', message: 'Registro e arquivos removidos.' });
     } catch (error) {
       $q.notify({
         type: 'negative',
@@ -282,6 +555,23 @@ onActivated(() => {
 </script>
 
 <style scoped lang="scss">
+.controle-header {
+  margin-bottom: 16px;
+}
+
+.controle-header__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.controle-header__subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary, #94a3b8);
+}
+
 .consultar-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -303,9 +593,19 @@ onActivated(() => {
   }
 }
 
+.consultar-toolbar__meters {
+  color: var(--text-muted, #94a3b8);
+}
+
 .consultar-toolbar__refresh {
   border: 1px solid var(--border);
   background: var(--surface);
+}
+
+.medidor-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .search-bar {
@@ -394,6 +694,79 @@ onActivated(() => {
 .obra-details__value {
   font-size: 13px;
   font-weight: 600;
+}
+
+.arquivos-block__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 10px;
+}
+
+.arquivos-block__pep {
+  margin-left: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.arquivos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arquivo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.arquivo-row--compact {
+  padding: 6px 10px;
+}
+
+.arquivo-row__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.arquivo-row__name {
+  font-size: 13px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.historico-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historico-evento {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.historico-evento__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .empty-state {

@@ -142,3 +142,13 @@ export async function savePdfWithWatermark(doc: jsPDF, fileName: string): Promis
   doc.save(fileName);
   return fileName;
 }
+
+/** Gera o blob do PDF (com marca d'água) sem forçar download. */
+export async function buildPdfBlobWithWatermark(
+  doc: jsPDF,
+  fileName: string,
+): Promise<{ blob: Blob; fileName: string }> {
+  await applyPdfWatermark(doc);
+  const blob = doc.output('blob');
+  return { blob, fileName };
+}

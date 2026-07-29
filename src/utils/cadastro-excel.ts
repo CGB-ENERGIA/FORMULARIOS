@@ -27,6 +27,54 @@ function downloadBuffer(buffer: ArrayBuffer, fileName: string) {
   URL.revokeObjectURL(url);
 }
 
+async function buildCadastroExcelBuffer(clientes: CadastroForm[]): Promise<{
+  buffer: ArrayBuffer;
+  fileName: string;
+}> {
+  if (clientes.length === 0) {
+    throw new Error('Nenhum cliente para exportar.');
+  }
+
+  const templateBuffer = await loadTemplate();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(templateBuffer);
+
+  const firstSheet = workbook.getWorksheet(SHEET_NAME);
+  if (!firstSheet) {
+    throw new Error('Aba CADASTRO não encontrada no modelo.');
+  }
+
+  const sheetNames = uniqueSheetNames(clientes);
+  firstSheet.name = sheetNames[0]!;
+  fillForm(firstSheet, clientes[0]!);
+
+  for (let index = 1; index < clientes.length; index++) {
+    const sheet = await createFilledSheetClone(workbook, templateBuffer, sheetNames[index]!);
+    fillForm(sheet, clientes[index]!);
+  }
+
+  const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+  const fileName = buildCadastroExportFileName(clientes[0]!);
+  return { buffer, fileName };
+}
+
+export async function exportCadastroToExcel(clientes: CadastroForm[]) {
+  const { buffer, fileName } = await buildCadastroExcelBuffer(clientes);
+  downloadBuffer(buffer, fileName);
+  return fileName;
+}
+
+/** Gera Excel + blob sem download (para persistir no módulo Clientes). */
+export async function buildCadastroExcelBlob(
+  clientes: CadastroForm[],
+): Promise<{ blob: Blob; fileName: string }> {
+  const { buffer, fileName } = await buildCadastroExcelBuffer(clientes);
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  return { blob, fileName };
+}
+
 function setCell(sheet: ExcelJS.Worksheet, ref: string, value: string | null) {
   sheet.getCell(ref).value = value === null || value === '' ? null : value;
 }
@@ -153,33 +201,4 @@ async function createFilledSheetClone(
   const target = workbook.addWorksheet(sheetName);
   copyWorksheet(source, target);
   return target;
-}
-
-export async function exportCadastroToExcel(clientes: CadastroForm[]) {
-  if (clientes.length === 0) {
-    throw new Error('Nenhum cliente para exportar.');
-  }
-
-  const templateBuffer = await loadTemplate();
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(templateBuffer);
-
-  const firstSheet = workbook.getWorksheet(SHEET_NAME);
-  if (!firstSheet) {
-    throw new Error('Aba CADASTRO não encontrada no modelo.');
-  }
-
-  const sheetNames = uniqueSheetNames(clientes);
-  firstSheet.name = sheetNames[0]!;
-  fillForm(firstSheet, clientes[0]!);
-
-  for (let index = 1; index < clientes.length; index++) {
-    const sheet = await createFilledSheetClone(workbook, templateBuffer, sheetNames[index]!);
-    fillForm(sheet, clientes[index]!);
-  }
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const fileName = buildCadastroExportFileName(clientes[0]!);
-  downloadBuffer(buffer as ArrayBuffer, fileName);
-  return fileName;
 }
