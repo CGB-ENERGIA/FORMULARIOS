@@ -102,7 +102,10 @@
                 <q-badge
                   v-for="rel in entry.relatorios"
                   :key="`${entry.id}-${rel.id || rel.nome_arquivo}`"
-                  :color="rel.armazenado ? 'teal' : 'grey'"
+                  :class="[
+                    'formato-badge',
+                    rel.formato === 'pdf' ? 'formato-badge--pdf' : 'formato-badge--excel',
+                  ]"
                   :label="rel.formato.toUpperCase()"
                   class="q-ml-xs"
                 >
@@ -665,6 +668,22 @@ onActivated(() => {
   align-items: center;
   gap: 6px;
   margin-bottom: 6px;
+}
+
+.formato-badge {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+
+.formato-badge--pdf {
+  background: #9b1b46 !important;
+  color: #fff !important;
+}
+
+.formato-badge--excel {
+  background: #059669 !important;
+  color: #fff !important;
 }
 
 .historico-card__meta {

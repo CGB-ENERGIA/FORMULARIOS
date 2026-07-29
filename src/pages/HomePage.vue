@@ -20,14 +20,19 @@
           Portal de Formulários
         </h1>
         <p class="portal-hero__subtitle">{{ APP_DESCRIPTION }}</p>
-        <button type="button" class="portal-hero__cta" @click="scrollToCatalog">
+        <button type="button" class="portal-hero__cta" @click="revealCatalog">
           Ver formulários
           <q-icon name="south" size="18px" />
         </button>
       </div>
     </section>
 
-    <section id="catalogo" class="portal-catalog" aria-labelledby="catalog-title">
+    <section
+      v-if="catalogVisible"
+      id="catalogo"
+      class="portal-catalog"
+      aria-labelledby="catalog-title"
+    >
       <div class="portal-catalog__inner">
         <header class="portal-catalog__header">
           <h2 id="catalog-title">Formulários</h2>
@@ -65,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   APP_BRAND,
@@ -77,12 +82,15 @@ import { publicAsset } from 'src/utils/assets';
 const brandMarkUrl = publicAsset('brand/cgb-mark.png');
 const router = useRouter();
 const catalog = computed(() => getFormCatalog());
+const catalogVisible = ref(false);
 
 function goTo(route: string) {
   void router.push(route);
 }
 
-function scrollToCatalog() {
+async function revealCatalog() {
+  catalogVisible.value = true;
+  await nextTick();
   document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
