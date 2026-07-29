@@ -1,0 +1,1 @@
+import{G as e,h as t,q as n}from"./runtime-core.esm-bundler-Cg_Eizo4.js";function r(e,t,n,r){return Object.defineProperty(e,t,{get:n,set:r,enumerable:!0}),e}function i(e,t){for(let n in t)r(e,n,t[n]);return e}function a(n){return e(t(n))}function o(t){return e(t)}var s=(e,t)=>{let i=n(e);for(let n in e)r(t,n,()=>i[n],e=>{i[n]=e});return t};export{r as a,i,o as n,s as r,a as t};
