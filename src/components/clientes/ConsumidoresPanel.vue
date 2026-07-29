@@ -1,44 +1,12 @@
 <template>
   <div class="page-shell clientes-panel">
     <div class="page-shell__inner">
-      <!-- Seletor de Distrital (obrigatório) -->
-      <q-card flat class="premium-card q-mb-md">
-        <div class="premium-card__header">
-          <div class="premium-card__header-title">
-            <div class="premium-card__header-icon">
-              <q-icon name="location_city" size="22px" />
-            </div>
-            Distrital
-          </div>
-          <q-btn
-            flat dense no-caps
-            icon="history"
-            label="Ver Histórico"
-            color="primary"
-            size="sm"
-            @click="$router.push('/historico')"
-          />
-        </div>
-        <q-card-section class="premium-card__body">
-          <div class="row q-gutter-sm items-center">
-            <q-btn
-              v-for="d in DISTRITAIS"
-              :key="d"
-              :label="d"
-              :color="distrital === d ? 'primary' : 'grey-7'"
-              :unelevated="distrital === d"
-              :outline="distrital !== d"
-              no-caps
-              class="distrital-btn"
-              @click="distrital = d"
-            />
-          </div>
-          <div v-if="!distrital" class="distrital-hint">
-            <q-icon name="info" size="16px" color="warning" />
-            Selecione uma distrital para habilitar o formulário
-          </div>
-        </q-card-section>
-      </q-card>
+      <DistritalPicker
+        :model-value="distrital || null"
+        class="q-mb-md"
+        :hint="distrital ? '' : 'Selecione uma distrital para habilitar o formulário'"
+        @update:model-value="onDistritalPicked"
+      />
 
       <!-- Formulário — só aparece após selecionar distrital -->
       <template v-if="distrital">
@@ -196,35 +164,6 @@
         </q-card-section>
       </q-card>
 
-      <div v-if="podeContinuar" class="continuar-bar q-mb-md">
-        <q-btn
-          unelevated
-          color="primary"
-          icon="arrow_forward"
-          label="CONTINUAR"
-          no-caps
-          class="continuar-btn"
-          @click="handleContinuar"
-        />
-        <span class="continuar-bar__hint">
-          Avança para a Solicitação de serviço
-        </span>
-      </div>
-      <div v-else-if="distrital" class="continuar-bar continuar-bar--pending q-mb-md">
-        <q-btn
-          unelevated
-          color="primary"
-          icon="arrow_forward"
-          label="CONTINUAR"
-          no-caps
-          class="continuar-btn"
-          disable
-        />
-        <span class="continuar-bar__hint">
-          Preencha a obra, os consumidores e anexe as fotos do padrão e do medidor para continuar
-        </span>
-      </div>
-
       <div class="action-bar">
         <div>
           <div class="action-bar__title">Consumidores</div>
@@ -246,12 +185,18 @@
           />
           <q-btn
             unelevated
-            icon="download"
-            :label="$q.screen.gt.xs ? 'Exportar Excel' : undefined"
-            class="action-btn--excel"
+            color="primary"
+            icon="arrow_forward"
+            :label="$q.screen.gt.xs ? 'CONTINUAR' : undefined"
             no-caps
-            @click="handleExport"
-          />
+            class="continuar-btn"
+            :disable="!podeContinuar"
+            @click="handleContinuar"
+          >
+            <q-tooltip v-if="!podeContinuar">
+              Preencha a obra, os consumidores e anexe as fotos para continuar
+            </q-tooltip>
+          </q-btn>
           <q-btn
             outline
             color="negative"
@@ -493,10 +438,11 @@ import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import DistritalPicker from 'src/components/clientes/DistritalPicker.vue';
 import { useCadastroStore } from 'src/stores/cadastro';
 import { useConsumidoresStore, FORNECEDOR_FIXO, REGIONAL_FIXA, TEC_OBRA_FIXO } from 'src/stores/consumidores';
 import type { Consumidor, ObraInfo } from 'src/stores/consumidores';
-import { consumidorPreenchido, exportToExcel } from 'src/utils/excel';
+import { consumidorPreenchido } from 'src/utils/excel';
 import {
   applyTipoLigacaoFromMedidor,
   getMedidorFieldError,
@@ -504,11 +450,7 @@ import {
   consumidorComDados,
 } from 'src/utils/consumidor-helpers';
 import { getObraFieldError, isObraCompleta, validateObraParaExportacao } from 'src/utils/obra-helpers';
-import {
-  DISTRITAIS,
-  appendHistoricoEntry,
-} from 'src/utils/historico-file';
-import type { DistritalCode, HistoricoEntry } from 'src/utils/historico-file';
+import type { DistritalCode } from 'src/utils/historico-file';
 
 type FotoTipo = 'padrao' | 'medidor';
 
@@ -517,6 +459,10 @@ const router = useRouter();
 const store = useConsumidoresStore();
 const cadastroStore = useCadastroStore();
 const { obra, consumidores, distrital } = storeToRefs(store);
+
+function onDistritalPicked(value: DistritalCode | null) {
+  distrital.value = value ?? '';
+}
 
 const { addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor } = store;
 const obraValidacaoAtiva = ref(false);
@@ -675,7 +621,7 @@ const columns: QTableColumn[] = [{ name: 'id', label: 'Nº', field: 'id' }];
 function notifyExportValidationErrors(errors: string[]) {
   $q.notify({
     type: 'negative',
-    message: 'Não foi possível exportar. Corrija os campos:',
+    message: 'Não foi possível continuar. Corrija os campos:',
     caption: errors.join(' · '),
     multiLine: errors.length > 1,
     timeout: 8000,
@@ -695,67 +641,8 @@ function ensureExportavel(): boolean {
   return true;
 }
 
-async function salvarHistorico(): Promise<void> {
-  if (!distrital.value) return;
-
-  const preenchidos = consumidores.value.filter(consumidorPreenchido);
-
-  const entry: HistoricoEntry = {
-    id: new Date().toISOString(),
-    distrital: distrital.value as DistritalCode,
-    descricaoObra: obra.value.descricaoObra,
-    elementoPep: obra.value.elementoPep,
-    dataConclusao: obra.value.dataConclusao,
-    municipio: obra.value.municipio,
-    localidade: obra.value.localidade,
-    totalConsumidores: preenchidos.length,
-    consumidores: preenchidos.map((c) => ({
-      nome: c.nome,
-      numeroMedidor: c.numeroMedidor,
-      tipoLigacao: c.tipoLigacao,
-      padrao: c.padrao,
-      posteLigacao: c.posteLigacao,
-      dataLigacao: c.dataLigacao,
-    })),
-  };
-
-  try {
-    await appendHistoricoEntry(entry);
-    $q.notify({ type: 'info', icon: 'history', message: 'Registro salvo no histórico.', timeout: 2000 });
-  } catch (error) {
-    console.error('Erro ao salvar histórico:', error);
-  }
-}
-
-async function handleExport() {
-  if (!ensureExportavel()) return;
-
-  try {
-    const fileName = await exportToExcel(obra.value, consumidores.value);
-    $q.notify({
-      type: 'positive',
-      message: `Arquivo ${fileName} gerado com sucesso.`,
-    });
-    await salvarHistorico();
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: 'Erro ao exportar Excel.',
-    });
-    console.error(error);
-  }
-}
-
 function handleContinuar() {
-  obraValidacaoAtiva.value = true;
-  const errors = [
-    ...validateObraParaExportacao(obra.value),
-    ...validateConsumidoresParaExportacao(consumidores.value),
-  ];
-  if (errors.length > 0) {
-    notifyExportValidationErrors(errors);
-    return;
-  }
+  if (!ensureExportavel()) return;
 
   $q.dialog({
     title: 'A OBRA POSSUI TRANSFORMADOR?',
@@ -792,12 +679,6 @@ function handleReset() {
 </script>
 
 <style scoped>
-.distrital-btn {
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  min-width: 72px;
-}
-
 .distrital-hint {
   display: flex;
   align-items: center;
@@ -881,26 +762,9 @@ function handleReset() {
   cursor: pointer;
 }
 
-.continuar-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 0 8px;
-}
-
-.continuar-bar--pending .continuar-btn {
-  opacity: 0.55;
-}
-
 .continuar-btn {
   font-weight: 700;
   letter-spacing: 0.04em;
-  min-width: 160px;
-}
-
-.continuar-bar__hint {
-  font-size: 13px;
-  color: var(--text-muted, #64748b);
+  min-width: 140px;
 }
 </style>

@@ -330,6 +330,8 @@ import {
 import { exportClientesPadrao } from 'src/utils/clientes-export';
 import { validateConsumidoresParaExportacao } from 'src/utils/consumidor-helpers';
 import { validateObraParaExportacao } from 'src/utils/obra-helpers';
+import { salvarRegistroClientes } from 'src/services/registros/save-clientes';
+import type { DistritalCode } from 'src/utils/historico-file';
 
 const $q = useQuasar();
 const store = useCadastroStore();
@@ -425,6 +427,28 @@ async function handleExport() {
       caption: `${consumidoresFileName} · ${cadastroFileName}`,
       timeout: 6000,
     });
+
+    if (consumidoresStore.distrital) {
+      try {
+        await salvarRegistroClientes({
+          distrital: consumidoresStore.distrital as DistritalCode,
+          obra: consumidoresStore.obra,
+          consumidores: consumidoresStore.consumidores,
+          relatorios: [
+            { formato: 'pdf', nome_arquivo: consumidoresFileName },
+            { formato: 'excel', nome_arquivo: cadastroFileName },
+          ],
+        });
+        $q.notify({
+          type: 'info',
+          icon: 'manage_search',
+          message: 'Registro salvo em Consultar.',
+          timeout: 2200,
+        });
+      } catch (error) {
+        console.error('Erro ao salvar registro:', error);
+      }
+    }
   } catch (error) {
     dismiss();
     $q.notify({

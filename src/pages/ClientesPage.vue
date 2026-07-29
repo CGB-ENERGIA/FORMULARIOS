@@ -15,6 +15,7 @@
       >
         <q-tab name="consumidores" icon="groups" label="Relação na obra" no-caps />
         <q-tab name="cadastro" icon="assignment_ind" label="Solicitação de serviço" no-caps />
+        <q-tab name="consultar" icon="manage_search" label="Consultar" no-caps />
       </q-tabs>
 
       <q-tab-panels
@@ -29,6 +30,9 @@
         <q-tab-panel name="cadastro" class="q-pa-none">
           <CadastroPanel />
         </q-tab-panel>
+        <q-tab-panel name="consultar" class="q-pa-none">
+          <ConsultarPanel />
+        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
@@ -40,6 +44,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import ConsumidoresPanel from 'src/components/clientes/ConsumidoresPanel.vue';
 import CadastroPanel from 'src/components/clientes/CadastroPanel.vue';
+import ConsultarPanel from 'src/components/clientes/ConsultarPanel.vue';
 import { useCadastroStore } from 'src/stores/cadastro';
 import { useConsumidoresStore } from 'src/stores/consumidores';
 import {
@@ -47,7 +52,7 @@ import {
   syncConsumidoresIntoCadastro,
 } from 'src/utils/form-bridge';
 
-export type ClientesTab = 'consumidores' | 'cadastro';
+export type ClientesTab = 'consumidores' | 'cadastro' | 'consultar';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -58,7 +63,9 @@ const cadastroStore = useCadastroStore();
 const tab = ref<ClientesTab>(resolveTab(route.query.tab));
 
 function resolveTab(value: unknown): ClientesTab {
-  return value === 'cadastro' ? 'cadastro' : 'consumidores';
+  if (value === 'cadastro') return 'cadastro';
+  if (value === 'consultar' || value === 'historico') return 'consultar';
+  return 'consumidores';
 }
 
 function syncFromConsumidores() {
@@ -104,7 +111,8 @@ watch(tab, (next, prev) => {
     }
   }
 
-  const queryTab = next === 'cadastro' ? 'cadastro' : undefined;
+  const queryTab =
+    next === 'cadastro' || next === 'consultar' ? next : undefined;
   if ((route.query.tab as string | undefined) !== queryTab) {
     void router.replace({
       path: '/clientes',

@@ -37,8 +37,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'historico',
-        component: () => import('pages/HistoricoPage.vue'),
-        meta: { title: 'HISTÓRICO' },
+        redirect: { path: '/clientes', query: { tab: 'consultar' } },
       },
       {
         path: 'poda',
