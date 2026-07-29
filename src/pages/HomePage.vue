@@ -10,7 +10,7 @@
       <div class="portal-hero__inner">
         <img
           class="portal-hero__mark"
-          src="/brand/cgb-mark.png"
+          :src="brandMarkUrl"
           alt=""
           width="88"
           height="88"
@@ -72,7 +72,9 @@ import {
   APP_DESCRIPTION,
   getFormCatalog,
 } from 'src/config/navigation';
+import { publicAsset } from 'src/utils/assets';
 
+const brandMarkUrl = publicAsset('brand/cgb-mark.png');
 const router = useRouter();
 const catalog = computed(() => getFormCatalog());
 

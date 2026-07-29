@@ -16,7 +16,7 @@
         <div class="app-header__brand" @click="goHome">
           <img
             class="app-header__mark"
-            src="/brand/cgb-mark.png"
+            :src="brandMarkUrl"
             alt=""
             width="28"
             height="28"
@@ -46,7 +46,7 @@
         <header class="app-drawer__brand">
           <img
             class="app-drawer__mark"
-            src="/brand/cgb-mark.png"
+            :src="brandMarkUrl"
             alt="CGB Engenharia"
             width="56"
             height="56"
@@ -130,7 +130,9 @@ import {
   isExternalNavItem,
   type NavItem,
 } from 'src/config/navigation';
+import { publicAsset } from 'src/utils/assets';
 
+const brandMarkUrl = publicAsset('brand/cgb-mark.png');
 const $q = useQuasar();
 const route = useRoute();
 const router = useRouter();
