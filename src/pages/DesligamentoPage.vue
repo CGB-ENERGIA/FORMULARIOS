@@ -2,15 +2,7 @@
   <q-page class="page-shell">
     <div class="page-shell__inner">
       <header class="page-header">
-        <div class="page-header__eyebrow">
-          <q-icon name="power_off" size="14px" />
-          Formulário operacional
-        </div>
         <h1 class="page-header__title">Aviso de Desligamento</h1>
-        <p class="page-header__subtitle">
-          Preencha os dados da obra, da solicitação de intervenção e os consumidores. Exporte no
-          layout original da planilha.
-        </p>
       </header>
 
       <q-card flat class="premium-card q-mb-md">
@@ -215,7 +207,26 @@
                 dense
                 hide-bottom-space
                 placeholder="7,04"
-              />
+                :readonly="!valoresUnitariosLiberados"
+                :filled="!valoresUnitariosLiberados"
+                @focus="solicitarSenhaValoresUnitarios"
+              >
+                <template #append>
+                  <q-icon
+                    :name="valoresUnitariosLiberados ? 'lock_open' : 'lock'"
+                    class="cursor-pointer"
+                    @click="solicitarSenhaValoresUnitarios"
+                  >
+                    <q-tooltip>
+                      {{
+                        valoresUnitariosLiberados
+                          ? 'Edição liberada'
+                          : 'Bloqueado — informe a senha para editar'
+                      }}
+                    </q-tooltip>
+                  </q-icon>
+                </template>
+              </q-input>
             </div>
             <div class="col-12 col-md-6">
               <q-input
@@ -225,7 +236,26 @@
                 dense
                 hide-bottom-space
                 placeholder="8,24"
-              />
+                :readonly="!valoresUnitariosLiberados"
+                :filled="!valoresUnitariosLiberados"
+                @focus="solicitarSenhaValoresUnitarios"
+              >
+                <template #append>
+                  <q-icon
+                    :name="valoresUnitariosLiberados ? 'lock_open' : 'lock'"
+                    class="cursor-pointer"
+                    @click="solicitarSenhaValoresUnitarios"
+                  >
+                    <q-tooltip>
+                      {{
+                        valoresUnitariosLiberados
+                          ? 'Edição liberada'
+                          : 'Bloqueado — informe a senha para editar'
+                      }}
+                    </q-tooltip>
+                  </q-icon>
+                </template>
+              </q-input>
             </div>
             <div class="col-12 col-md-6">
               <q-input
@@ -530,6 +560,42 @@ const { addConsumidor, removeConsumidor, resetForm } = store;
 const siPdfInput = ref<HTMLInputElement | null>(null);
 const siDate = ref('');
 const desligamentoValidacaoAtiva = ref(false);
+const valoresUnitariosLiberados = ref(false);
+const VALORES_UNITARIOS_SENHA = 'CGB123';
+
+function solicitarSenhaValoresUnitarios() {
+  if (valoresUnitariosLiberados.value) return;
+
+  $q.dialog({
+    title: 'Campos protegidos',
+    message: 'Informe a senha para alterar os valores unitários.',
+    prompt: {
+      model: '',
+      type: 'password',
+      outlined: true,
+      dense: true,
+      label: 'Senha',
+      isValid: (val) => val.length > 0,
+    },
+    cancel: { label: 'Cancelar', flat: true },
+    ok: { label: 'Liberar', color: 'primary', unelevated: true },
+    persistent: true,
+  }).onOk((senha: string) => {
+    if (senha === VALORES_UNITARIOS_SENHA) {
+      valoresUnitariosLiberados.value = true;
+      $q.notify({
+        type: 'positive',
+        message: 'Valores unitários liberados para edição.',
+      });
+      return;
+    }
+
+    $q.notify({
+      type: 'negative',
+      message: 'Senha incorreta.',
+    });
+  });
+}
 
 function handleSiDateChange(val: string) {
   // QDate retorna YYYY/MM/DD — extraímos só o mês
@@ -897,6 +963,7 @@ function handleReset() {
   }).onOk(() => {
     resetForm();
     desligamentoValidacaoAtiva.value = false;
+    valoresUnitariosLiberados.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });
 }

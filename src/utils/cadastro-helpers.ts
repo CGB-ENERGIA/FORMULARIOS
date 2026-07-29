@@ -25,6 +25,48 @@ export function getCadastroClientesExportErrors(clientes: CadastroForm[]): strin
   return clientes.flatMap((form, index) => getCadastroExportErrors(form, index));
 }
 
+export function getResponsavelExportErrors(form: CadastroForm, clienteIndex = 0): string[] {
+  const prefix = `Cliente ${clienteIndex + 1}: `;
+  const errors: string[] = [];
+  if (!form.nomeResponsavel.trim()) {
+    errors.push(`${prefix}Nome do responsável é obrigatório.`);
+  }
+  if (!form.dataExecucao.trim()) {
+    errors.push(`${prefix}Data de execução é obrigatória.`);
+  }
+  return errors;
+}
+
+export function getTransformadorExportErrors(form: CadastroForm, clienteIndex = 0): string[] {
+  const prefix = `Cliente ${clienteIndex + 1} (Transformador): `;
+  const errors: string[] = [];
+  if (!form.pot.trim()) errors.push(`${prefix}POT é obrigatório.`);
+  if (!form.numEquatorial.trim()) errors.push(`${prefix}N° Equatorial é obrigatório.`);
+  if (!form.fabricante.trim()) errors.push(`${prefix}Fabricante é obrigatório.`);
+  if (!form.numSerie.trim()) errors.push(`${prefix}Nº série é obrigatório.`);
+  return errors;
+}
+
+export function getCadastroSolicitacaoPdfErrors(
+  clientes: CadastroForm[],
+  possuiTransformador: boolean | null,
+): string[] {
+  if (possuiTransformador === null) {
+    return [
+      'Responda se a obra possui transformador (botão CONTINUAR na Relação na obra).',
+    ];
+  }
+
+  const errors = getCadastroClientesExportErrors(clientes);
+  clientes.forEach((form, index) => {
+    errors.push(...getResponsavelExportErrors(form, index));
+    if (possuiTransformador) {
+      errors.push(...getTransformadorExportErrors(form, index));
+    }
+  });
+  return errors;
+}
+
 export function withLabel(label: string, value: string, fallback = label): string {
   const trimmed = value.trim();
   if (!trimmed) return fallback;

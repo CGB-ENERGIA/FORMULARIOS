@@ -8,6 +8,7 @@ import {
 } from './desligamento-helpers';
 import { publicAsset } from './assets';
 import { buildDesligamentoExportFileName } from './export-helpers';
+import { savePdfWithWatermark } from './pdf-watermark';
 
 const BANNER_URL = publicAsset('template/banner.png');
 
@@ -275,8 +276,7 @@ export async function exportDesligamentoToPdf(
   });
 
   const fileName = buildDesligamentoExportFileName(obra, 'pdf');
-  doc.save(fileName);
-  return fileName;
+  return savePdfWithWatermark(doc, fileName);
 }
 
 function drawEvidImg(

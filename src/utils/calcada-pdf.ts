@@ -3,6 +3,7 @@ import type { CalcadaObra, CalcadaEvidencia } from '../stores/calcada';
 import { evidenciaPreenchida } from '../stores/calcada';
 import { calcularValorRs, formatBRL } from './calcada-helpers';
 import { buildCalcadaExportFileName } from './export-helpers';
+import { savePdfWithWatermark } from './pdf-watermark';
 import { publicAsset } from './assets';
 
 const LOGO_URL = publicAsset('template/calcada-logo.png');
@@ -192,6 +193,5 @@ export async function exportCalcadaToPdf(
   }
 
   const fileName = buildCalcadaExportFileName(obra, 'pdf');
-  doc.save(fileName);
-  return fileName;
+  return savePdfWithWatermark(doc, fileName);
 }

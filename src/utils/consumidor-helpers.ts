@@ -8,7 +8,9 @@ export function consumidorComDados(c: Consumidor) {
       c.padrao ||
       c.ramalDuplex ||
       c.ramalTriplex ||
-      c.posteLigacao,
+      c.posteLigacao ||
+      c.fotoPadrao ||
+      c.fotoMedidor,
   );
 }
 
@@ -89,8 +91,24 @@ export function validateConsumidoresParaExportacao(consumidores: Consumidor[]): 
       errors.push(`Linha ${consumidor.id}${identificacao}: ${medidorError}`);
     }
 
+    if (consumidor.nome?.trim() && !consumidor.numeroMedidor?.trim()) {
+      errors.push(`Linha ${consumidor.id}${identificacao}: informe o Número do Medidor.`);
+    }
+
     if (!consumidor.padrao) {
       errors.push(`Linha ${consumidor.id}${identificacao}: selecione o Padrão (5M, 7M ou CPP).`);
+    }
+
+    if (!consumidor.posteLigacao?.trim()) {
+      errors.push(`Linha ${consumidor.id}${identificacao}: informe o Poste de Ligação.`);
+    }
+
+    if (!consumidor.fotoPadrao?.trim()) {
+      errors.push(`Linha ${consumidor.id}${identificacao}: anexe a FOTO DO PADRÃO.`);
+    }
+
+    if (!consumidor.fotoMedidor?.trim()) {
+      errors.push(`Linha ${consumidor.id}${identificacao}: anexe a FOTO DO MEDIDOR.`);
     }
   }
 

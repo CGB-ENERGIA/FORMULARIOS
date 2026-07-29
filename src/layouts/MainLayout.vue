@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf" class="app-layout">
-    <q-header class="app-header">
+    <q-header elevated class="app-header">
       <q-toolbar class="app-toolbar">
         <q-btn
           ref="menuBtnRef"
@@ -13,12 +13,23 @@
           @click.stop="leftDrawerOpen = !leftDrawerOpen"
         />
 
-        <q-toolbar-title class="app-toolbar-title">
-          <span class="app-toolbar-title__brand">{{ APP_NAME }}</span>
-          <span v-if="pageTitle" class="app-toolbar-title__separator">/</span>
-          <span v-if="pageTitle" class="app-toolbar-title__page">{{ pageTitle }}</span>
-        </q-toolbar-title>
+        <div class="app-header__brand" @click="goHome">
+          <img
+            class="app-header__mark"
+            src="/brand/cgb-mark.png"
+            alt=""
+            width="28"
+            height="28"
+          />
+          <div class="app-header__copy">
+            <span class="app-header__name">{{ APP_BRAND }}</span>
+            <span class="app-header__product">{{ APP_TAGLINE }}</span>
+          </div>
+        </div>
 
+        <q-space />
+
+        <span v-if="pageTitle" class="app-header__page">{{ pageTitle }}</span>
         <ThemeToggle />
       </q-toolbar>
     </q-header>
@@ -26,109 +37,73 @@
     <q-drawer
       v-model="leftDrawerOpen"
       show-if-above
-      :width="300"
+      :width="276"
       :breakpoint="1024"
       no-mini-animation
       class="app-drawer"
     >
       <div class="app-drawer__shell">
-        <div class="app-drawer__glow app-drawer__glow--primary" aria-hidden="true" />
-        <div class="app-drawer__glow app-drawer__glow--accent" aria-hidden="true" />
-        <div class="app-drawer__grid" aria-hidden="true" />
-
         <header class="app-drawer__brand">
-          <div class="app-drawer__logo">
-            <q-icon name="bolt" size="26px" />
+          <img
+            class="app-drawer__mark"
+            src="/brand/cgb-mark.png"
+            alt="CGB Engenharia"
+            width="56"
+            height="56"
+          />
+          <div class="app-drawer__brand-text">
+            <div class="app-drawer__brand-name">{{ APP_BRAND }}</div>
+            <div class="app-drawer__brand-product">Portal de Formulários</div>
           </div>
-
-          <div class="app-drawer__brand-copy">
-            <div class="app-drawer__brand-title">{{ APP_NAME }}</div>
-            <div class="app-drawer__brand-caption">CGB Engenharia</div>
-          </div>
-
-          <div class="app-drawer__brand-chip">Pro</div>
         </header>
 
-        <div class="app-drawer__divider" />
+        <nav class="app-drawer__nav" aria-label="Navegação principal">
+          <router-link
+            to="/"
+            class="app-drawer__item"
+            :class="{ 'app-drawer__item--active': isNavActive('/') }"
+          >
+            <q-icon name="home" size="18px" />
+            <span>Início</span>
+          </router-link>
 
-        <nav class="app-drawer__nav">
-          <div class="app-drawer__section-label">Menu principal</div>
+          <template v-for="group in navGroups" :key="group.key">
+            <p class="app-drawer__group">{{ group.label }}</p>
 
-          <template v-for="item in navItems" :key="getNavItemKey(item)">
-            <div
-              v-if="isExternalNavItem(item) && item.locked"
-              class="app-drawer__link app-drawer__link--locked"
-              aria-disabled="true"
-              title="Acesso indisponível"
-            >
-              <div class="app-drawer__link-icon">
-                <q-icon :name="item.icon" size="20px" />
+            <template v-for="item in group.items" :key="getNavItemKey(item)">
+              <div
+                v-if="isExternalNavItem(item) && item.locked"
+                class="app-drawer__item app-drawer__item--locked"
+                aria-disabled="true"
+                title="Acesso indisponível"
+              >
+                <q-icon :name="item.icon" size="18px" />
+                <span>{{ item.title }}</span>
+                <q-icon name="lock" size="14px" class="app-drawer__lock" />
               </div>
 
-              <div class="app-drawer__link-copy">
-                <span class="app-drawer__link-title">
-                  {{ item.title }}
-                  <q-icon name="lock" size="14px" class="app-drawer__link-lock" />
-                </span>
-                <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
-              </div>
+              <a
+                v-else-if="isExternalNavItem(item)"
+                href="#"
+                class="app-drawer__item"
+                @click.prevent="handleExternalNav(item)"
+              >
+                <q-icon :name="item.icon" size="18px" />
+                <span>{{ item.title }}</span>
+              </a>
 
-              <q-icon name="lock" class="app-drawer__link-arrow" size="16px" />
-            </div>
-
-            <a
-              v-else-if="isExternalNavItem(item)"
-              href="#"
-              class="app-drawer__link app-drawer__link--external"
-              @click.prevent="handleExternalNav(item)"
-            >
-              <div class="app-drawer__link-icon">
-                <q-icon :name="item.icon" size="20px" />
-              </div>
-
-              <div class="app-drawer__link-copy">
-                <span class="app-drawer__link-title">{{ item.title }}</span>
-                <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
-              </div>
-
-              <q-icon name="north_east" class="app-drawer__link-arrow" size="16px" />
-            </a>
-
-            <router-link
-              v-else
-              :to="item.route!"
-              class="app-drawer__link"
-              :class="{ 'app-drawer__link--active': isNavActive(item.route!) }"
-            >
-              <div class="app-drawer__link-icon">
-                <q-icon :name="item.icon" size="20px" />
-              </div>
-
-              <div class="app-drawer__link-copy">
-                <span class="app-drawer__link-title">{{ item.title }}</span>
-                <span v-if="item.caption" class="app-drawer__link-caption">{{ item.caption }}</span>
-              </div>
-
-              <q-icon name="north_east" class="app-drawer__link-arrow" size="16px" />
-            </router-link>
+              <router-link
+                v-else
+                :to="item.route!"
+                class="app-drawer__item"
+                :class="{ 'app-drawer__item--active': isNavActive(item.route!) }"
+              >
+                <q-icon :name="item.icon" size="18px" />
+                <span>{{ item.title }}</span>
+              </router-link>
+            </template>
           </template>
         </nav>
-
-        <footer class="app-drawer__footer">
-          <div class="app-drawer__theme">
-            <ThemeToggle />
-          </div>
-
-          <div class="app-drawer__footer-card">
-            <div class="app-drawer__status">
-              <span class="app-drawer__status-dot" />
-              Plataforma ativa
-            </div>
-            <div class="app-drawer__footer-meta">
-              Uso interno · {{ currentYear }}
-            </div>
-          </div>
-        </footer>
       </div>
     </q-drawer>
 
@@ -144,28 +119,33 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import ThemeToggle from 'src/components/ThemeToggle.vue';
 import {
-  APP_NAME,
+  APP_BRAND,
+  APP_TAGLINE,
+  getNavGroups,
   getNavItemKey,
   isExternalNavItem,
-  navItems,
   type NavItem,
 } from 'src/config/navigation';
 
 const $q = useQuasar();
 const route = useRoute();
+const router = useRouter();
 const menuBtnRef = ref<{ $el: HTMLElement } | null>(null);
 const leftDrawerOpen = ref(false);
-
-const currentYear = new Date().getFullYear();
+const navGroups = getNavGroups();
 
 const pageTitle = computed(() => {
   const metaTitle = route.meta.title;
   return typeof metaTitle === 'string' ? metaTitle : '';
 });
+
+function goHome() {
+  void router.push('/');
+}
 
 function isNavActive(navRoute: string) {
   if (navRoute === '/') return route.path === '/';
@@ -207,7 +187,6 @@ function closeDrawer() {
 function handleDocumentClick(event: MouseEvent) {
   if (!leftDrawerOpen.value) return;
   if (isClickInsideDrawer(event.target) || isClickInsideMenuButton(event.target)) return;
-
   closeDrawer();
 }
 

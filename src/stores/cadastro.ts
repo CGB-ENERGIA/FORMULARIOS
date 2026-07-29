@@ -30,6 +30,8 @@ export interface CadastroForm {
 interface CadastroPersistedState {
   clientes: CadastroForm[];
   ativo: number;
+  /** null = ainda não respondeu; true = SIM; false = NÃO */
+  possuiTransformador: boolean | null;
 }
 
 const STORAGE_KEY = 'formularios-web:cadastro';
@@ -76,10 +78,10 @@ export function createClienteFromBase(base: CadastroForm): CadastroForm {
     fabricante: base.fabricante,
     dataFabr: base.dataFabr,
     numSerie: base.numSerie,
-    nomeResponsavel: base.nomeResponsavel,
-    dataExecucao: base.dataExecucao,
-    horaExecucao: base.horaExecucao,
-    empresa: base.empresa,
+    nomeResponsavel: '',
+    dataExecucao: '',
+    horaExecucao: '',
+    empresa: 'CGB ENERGIA',
   };
 }
 
@@ -94,6 +96,7 @@ function normalizeForm(raw: Partial<CadastroForm> | null | undefined): CadastroF
     ...createDefaultCadastroForm(),
     ...raw,
     ligadaFase: normalizeLigadaFase(raw?.ligadaFase),
+    empresa: raw?.empresa?.trim() || 'CGB ENERGIA',
   };
 }
 
@@ -107,7 +110,7 @@ function loadPersistedState(): CadastroPersistedState | null {
     // Migração do formato antigo (formulário único).
     if (!Array.isArray(parsed.clientes)) {
       const legacy = normalizeForm(parsed as Partial<CadastroForm>);
-      return { clientes: [legacy], ativo: 0 };
+      return { clientes: [legacy], ativo: 0, possuiTransformador: null };
     }
 
     const clientes = parsed.clientes.map((item) => normalizeForm(item));
@@ -118,7 +121,12 @@ function loadPersistedState(): CadastroPersistedState | null {
       clientes.length - 1,
     );
 
-    return { clientes, ativo };
+    return {
+      clientes,
+      ativo,
+      possuiTransformador:
+        typeof parsed.possuiTransformador === 'boolean' ? parsed.possuiTransformador : null,
+    };
   } catch {
     return null;
   }
@@ -140,6 +148,7 @@ export const useCadastroStore = defineStore('cadastro', () => {
   const persisted = loadPersistedState();
   const clientes = ref<CadastroForm[]>(persisted?.clientes ?? [createDefaultCadastroForm()]);
   const ativo = ref(persisted?.ativo ?? 0);
+  const possuiTransformador = ref<boolean | null>(persisted?.possuiTransformador ?? null);
 
   const form = computed({
     get: () => clientes.value[ativo.value] ?? clientes.value[0]!,
@@ -149,8 +158,13 @@ export const useCadastroStore = defineStore('cadastro', () => {
   });
 
   watch(
-    [clientes, ativo],
-    () => savePersistedState({ clientes: clientes.value, ativo: ativo.value }),
+    [clientes, ativo, possuiTransformador],
+    () =>
+      savePersistedState({
+        clientes: clientes.value,
+        ativo: ativo.value,
+        possuiTransformador: possuiTransformador.value,
+      }),
     { deep: true },
   );
 
@@ -175,19 +189,43 @@ export const useCadastroStore = defineStore('cadastro', () => {
     }
   }
 
+  function setPossuiTransformador(value: boolean) {
+    possuiTransformador.value = value;
+    if (!value) {
+      clientes.value = clientes.value.map((cliente) => ({
+        ...cliente,
+        pot: '',
+        numEquatorial: '',
+        fabricante: '',
+        dataFabr: '',
+        numSerie: '',
+      }));
+    }
+  }
+
   function resetForm() {
     clientes.value = [createDefaultCadastroForm()];
     ativo.value = 0;
+    possuiTransformador.value = null;
     clearPersistedState();
+  }
+
+  function replaceClientes(next: CadastroForm[]) {
+    const list = next.length > 0 ? next.map((item) => normalizeForm(item)) : [createDefaultCadastroForm()];
+    clientes.value = list;
+    ativo.value = 0;
   }
 
   return {
     clientes,
     ativo,
     form,
+    possuiTransformador,
     selectCliente,
     addCliente,
     removeCliente,
     resetForm,
+    replaceClientes,
+    setPossuiTransformador,
   };
 });

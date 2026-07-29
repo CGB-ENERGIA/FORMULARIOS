@@ -78,10 +78,10 @@ function starStyle(index: number) {
   width: 62px;
   height: 32px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 45%, #93c5fd 100%);
+  background: linear-gradient(135deg, #f0d5a8 0%, #e8b86d 45%, #d4a574 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 8px 20px rgba(37, 99, 235, 0.22);
+    0 8px 20px rgba(180, 120, 60, 0.22);
   overflow: hidden;
   transition:
     background 0.45s cubic-bezier(0.4, 0, 0.2, 1),
@@ -89,10 +89,10 @@ function starStyle(index: number) {
 }
 
 .theme-toggle--dark .theme-toggle__track {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #312e81 100%);
+  background: linear-gradient(135deg, #1a1216 0%, #2a1520 55%, #3d1628 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 8px 22px rgba(49, 46, 129, 0.45);
+    0 8px 22px rgba(90, 22, 48, 0.45);
 }
 
 .theme-toggle__glow {
@@ -175,10 +175,10 @@ function starStyle(index: number) {
 
 .theme-toggle--dark .theme-toggle__thumb {
   transform: translateX(30px);
-  background: linear-gradient(145deg, #312e81 0%, #1e1b4b 100%);
+  background: linear-gradient(145deg, #5a1630 0%, #2a1520 100%);
   box-shadow:
     0 4px 14px rgba(15, 23, 42, 0.45),
-    0 0 16px rgba(129, 140, 248, 0.35);
+    0 0 16px rgba(196, 30, 92, 0.3);
 }
 
 .theme-toggle__icon {
@@ -224,13 +224,13 @@ function starStyle(index: number) {
 .theme-toggle:hover .theme-toggle__track {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 10px 26px rgba(37, 99, 235, 0.3);
+    0 10px 26px rgba(180, 120, 60, 0.3);
 }
 
 .theme-toggle--dark:hover .theme-toggle__track {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 10px 28px rgba(49, 46, 129, 0.55);
+    0 10px 28px rgba(90, 22, 48, 0.55);
 }
 
 .theme-toggle:active .theme-toggle__thumb {

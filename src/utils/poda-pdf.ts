@@ -3,6 +3,7 @@ import { autoTable } from 'jspdf-autotable';
 import type { PodaServico } from '../stores/poda';
 import { servicoPreenchido } from '../stores/poda';
 import { publicAsset } from './assets';
+import { savePdfWithWatermark } from './pdf-watermark';
 
 const BANNER_URL = publicAsset('template/banner.png');
 
@@ -177,18 +178,9 @@ export async function exportPodaToPdf(servicos: PodaServico[]): Promise<string> 
     reg += 2;
   }
 
-  // Rodapé numerado
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Página ${p} / ${totalPages}`, PAGE_W / 2, PAGE_H - 4, { align: 'center' });
-  }
+  // Rodapé e marca d'água aplicados em savePdfWithWatermark.
 
   const ts = new Date().toISOString().slice(0, 10);
   const fileName = `PODA_${ts}.pdf`;
-  doc.save(fileName);
-  return fileName;
+  return savePdfWithWatermark(doc, fileName);
 }

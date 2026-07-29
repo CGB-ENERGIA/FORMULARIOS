@@ -33,6 +33,10 @@ export interface Consumidor {
   ramalTriplex: RamalOpcao;
   posteLigacao: string;
   dataLigacao: string;
+  /** Base64 data URL da foto do padrão (obrigatória na exportação). */
+  fotoPadrao: string;
+  /** Base64 data URL da foto do medidor (obrigatória na exportação). */
+  fotoMedidor: string;
 }
 
 function createEmptyConsumidor(id: number): Consumidor {
@@ -46,6 +50,8 @@ function createEmptyConsumidor(id: number): Consumidor {
     ramalTriplex: '',
     posteLigacao: '',
     dataLigacao: '',
+    fotoPadrao: '',
+    fotoMedidor: '',
   };
 }
 
@@ -114,5 +120,34 @@ export const useConsumidoresStore = defineStore('consumidores', () => {
     consumidores.value = Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1));
   }
 
-  return { obra, consumidores, distrital, addConsumidor, removeConsumidor, resetForm, syncDatas, touchConsumidor };
+  function replaceConsumidores(next: Consumidor[]) {
+    if (next.length === 0) {
+      consumidores.value = Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1));
+      return;
+    }
+
+    const padded = next.map((item, index) => ({
+      ...createEmptyConsumidor(index + 1),
+      ...item,
+      id: index + 1,
+    }));
+
+    while (padded.length < 20) {
+      padded.push(createEmptyConsumidor(padded.length + 1));
+    }
+
+    consumidores.value = padded;
+  }
+
+  return {
+    obra,
+    consumidores,
+    distrital,
+    addConsumidor,
+    removeConsumidor,
+    resetForm,
+    syncDatas,
+    touchConsumidor,
+    replaceConsumidores,
+  };
 });

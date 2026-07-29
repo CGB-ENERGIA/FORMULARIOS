@@ -31,7 +31,7 @@ export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' 
   return `ANEXO REPARO DE CALÇADA - ${pep}.${extension}`;
 }
 
-export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' = 'xlsx'): string {
+export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' | 'pdf' = 'xlsx'): string {
   const pep = sanitizeFileNamePart(form.pep) || sanitizeFileNamePart(form.nome) || 'cadastro';
   return `CADASTRO - ${pep}.${extension}`;
 }

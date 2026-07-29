@@ -15,6 +15,7 @@ import {
 import type { ArrastoMaterial } from './arrasto-types';
 import { publicAsset } from './assets';
 import { buildArrastoExportFileName } from './export-helpers';
+import { savePdfWithWatermark } from './pdf-watermark';
 
 const CGB_LOGO_URL = publicAsset('template/cgb-logo.png');
 
@@ -437,6 +438,5 @@ export async function exportArrastoToPdf(
   drawMateriaisArrastadosPage(doc, logo, quantidades, materiais, pesoTotalBruto);
 
   const fileName = buildArrastoExportFileName(obra, 'pdf');
-  doc.save(fileName);
-  return fileName;
+  return savePdfWithWatermark(doc, fileName);
 }

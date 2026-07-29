@@ -30,9 +30,9 @@ export default configure(() => ({
   framework: {
     config: {
       brand: {
-        primary: '#2563eb',
-        secondary: '#7c3aed',
-        accent: '#06b6d4',
+        primary: '#9B1B46',
+        secondary: '#5A1630',
+        accent: '#C41E5C',
         positive: '#10b981',
         negative: '#ef4444',
         info: '#3b82f6',

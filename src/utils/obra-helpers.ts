@@ -38,6 +38,10 @@ export function getObraFieldError(obra: ObraInfo, field: ObraField): string | nu
   return `${FIELD_LABELS[field]} é obrigatório.`;
 }
 
+export function isObraCompleta(obra: ObraInfo): boolean {
+  return validateObraParaExportacao(obra).length === 0;
+}
+
 export function validateObraParaExportacao(obra: ObraInfo): string[] {
   return (Object.keys(FIELD_LABELS) as ObraField[])
     .map((field) => getObraFieldError(obra, field))
