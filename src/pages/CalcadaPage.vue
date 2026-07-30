@@ -81,11 +81,11 @@
           <div class="row q-col-gutter-md items-center">
             <div class="col-12 col-md-4">
               <q-input v-model.number="obra.quantidade" type="number" min="0" step="0.01"
-                label="Quantidade (m²)" outlined dense hide-bottom-space suffix="m²" />
+                label="Quantidade" outlined dense hide-bottom-space />
             </div>
             <div class="col-12 col-md-4">
               <q-input v-model.number="obra.valorSap" type="number" min="0" step="0.01"
-                label="Valor SAP (R$/m²)" outlined dense hide-bottom-space prefix="R$" />
+                label="Valor SAP (R$)" outlined dense hide-bottom-space prefix="R$" />
             </div>
             <div class="col-12 col-md-4">
               <div class="calc-field calc-field--highlight">
