@@ -1,6 +1,6 @@
 # Formulários
 
-Plataforma de formulários digitais da CGB Engenharia, desenvolvida com **Bun** e **Quasar**.
+Plataforma de formulários digitais da CGB ENERGIA, desenvolvida com **Bun** e **Quasar**.
 
 ## Formulários disponíveis
 

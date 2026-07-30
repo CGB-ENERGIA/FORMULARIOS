@@ -82,7 +82,7 @@
           {{ searchQuery || medidorFiltro !== 'todos' ? 'Nenhum registro encontrado.' : 'Nenhum registro salvo.' }}
         </div>
         <div v-if="!searchQuery && medidorFiltro === 'todos'" class="text-caption text-grey-5">
-          Os registros e arquivos aparecem ao exportar na Solicitação de serviço.
+          Os registros e arquivos aparecem ao exportar em Cadastro.
         </div>
       </div>
 

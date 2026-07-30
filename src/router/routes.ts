@@ -42,12 +42,30 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'poda',
         component: () => import('pages/PodaPage.vue'),
-        meta: { title: 'PODA' },
+        meta: { title: 'PODA & CUSTEIO' },
       },
       {
         path: 'calcada',
         component: () => import('pages/CalcadaPage.vue'),
         meta: { title: 'CALÇADA' },
+      },
+      {
+        path: 'secionamento-cerca',
+        component: () => import('pages/BlockedFormPage.vue'),
+        meta: {
+          title: 'SECCIONAMENTO DE CERCA',
+          subtitle: 'Formulário de secionamento de cerca.',
+          icon: 'fence',
+        },
+      },
+      {
+        path: 'base-concretada',
+        component: () => import('pages/BlockedFormPage.vue'),
+        meta: {
+          title: 'BASE CONCRETADA',
+          subtitle: 'Formulário de base concretada.',
+          icon: 'foundation',
+        },
       },
     ],
   },

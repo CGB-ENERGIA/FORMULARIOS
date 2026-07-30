@@ -31,6 +31,11 @@ export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' 
   return `ANEXO REPARO DE CALÇADA - ${pep}.${extension}`;
 }
 
+export function buildCusteioExportFileName(cabecalho: { componenteOuPg?: string; municipio?: string }, extension: 'xlsx' | 'pdf'): string {
+  const ref = sanitizeFileNamePart(cabecalho.componenteOuPg || cabecalho.municipio || '') || 'custeio';
+  return `RELATORIO_CUSTEIO - ${ref}.${extension}`;
+}
+
 export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' | 'pdf' = 'xlsx'): string {
   const pep = sanitizeFileNamePart(form.pep) || sanitizeFileNamePart(form.nome) || 'cadastro';
   return `CADASTRO - ${pep}.${extension}`;

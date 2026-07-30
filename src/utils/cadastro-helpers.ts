@@ -29,7 +29,7 @@ export function getResponsavelExportErrors(form: CadastroForm, clienteIndex = 0)
   const prefix = `Cliente ${clienteIndex + 1}: `;
   const errors: string[] = [];
   if (!form.nomeResponsavel.trim()) {
-    errors.push(`${prefix}Nome do responsável é obrigatório.`);
+    errors.push(`${prefix}Nome do encarregado é obrigatório.`);
   }
   if (!form.dataExecucao.trim()) {
     errors.push(`${prefix}Data de execução é obrigatória.`);
@@ -53,7 +53,7 @@ export function getCadastroSolicitacaoPdfErrors(
 ): string[] {
   if (possuiTransformador === null) {
     return [
-      'Responda se a obra possui transformador (botão CONTINUAR na Relação na obra).',
+      'Responda se a obra possui transformador (botão CONTINUAR em Consumidores).',
     ];
   }
 

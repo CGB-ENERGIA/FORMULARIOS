@@ -43,20 +43,6 @@
       class="app-drawer"
     >
       <div class="app-drawer__shell">
-        <header class="app-drawer__brand">
-          <img
-            class="app-drawer__mark"
-            :src="brandMarkUrl"
-            alt="CGB Engenharia"
-            width="56"
-            height="56"
-          />
-          <div class="app-drawer__brand-text">
-            <div class="app-drawer__brand-name">{{ APP_BRAND }}</div>
-            <div class="app-drawer__brand-product">Portal de Formulários</div>
-          </div>
-        </header>
-
         <nav class="app-drawer__nav" aria-label="Navegação principal">
           <router-link
             to="/"
@@ -72,7 +58,7 @@
 
             <template v-for="item in group.items" :key="getNavItemKey(item)">
               <div
-                v-if="isExternalNavItem(item) && item.locked"
+                v-if="item.locked"
                 class="app-drawer__item app-drawer__item--locked"
                 aria-disabled="true"
                 title="Acesso indisponível"

@@ -7,7 +7,7 @@
         rounded
         dense
       >
-        Use <strong>CONTINUAR</strong> na Relação na obra para informar se há transformador.
+        Use <strong>CONTINUAR</strong> em Consumidores para informar se há transformador.
       </q-banner>
 
       <div class="action-bar action-bar--top q-mb-md">
@@ -134,10 +134,26 @@
               <q-input v-model="form.numPoste" label="Nº Poste" outlined dense hide-bottom-space />
             </div>
             <div class="col-12 col-md-3">
-              <q-input v-model="form.medInst" label="Med Inst" outlined dense hide-bottom-space />
+              <q-input
+                :model-value="form.medInst"
+                label="Med Inst"
+                outlined
+                dense
+                hide-bottom-space
+                inputmode="numeric"
+                @update:model-value="form.medInst = sanitizeDigits($event)"
+              />
             </div>
             <div class="col-12 col-md-3">
-              <q-input v-model="form.medAnt" label="Med Ant" outlined dense hide-bottom-space />
+              <q-input
+                :model-value="form.medAnt"
+                label="Medidor vizinho"
+                outlined
+                dense
+                hide-bottom-space
+                inputmode="numeric"
+                @update:model-value="form.medAnt = sanitizeDigits($event)"
+              />
             </div>
             <div class="col-12">
               <div class="text-caption text-grey-7 q-mb-xs">Ligada Fase</div>
@@ -253,12 +269,12 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="form.nomeResponsavel"
-                label="Nome do responsável *"
+                label="Nome do encarregado *"
                 outlined
                 dense
                 hide-bottom-space
                 :error="validacaoAtiva && !form.nomeResponsavel.trim()"
-                error-message="Informe o responsável"
+                error-message="Informe o encarregado"
               />
             </div>
             <div class="col-12 col-md-3">
@@ -328,7 +344,7 @@ import {
   PADRAO_OPTIONS,
 } from 'src/utils/cadastro-helpers';
 import { exportClientesPadrao } from 'src/utils/clientes-export';
-import { validateConsumidoresParaExportacao } from 'src/utils/consumidor-helpers';
+import { sanitizeDigits, validateConsumidoresParaExportacao } from 'src/utils/consumidor-helpers';
 import { validateObraParaExportacao } from 'src/utils/obra-helpers';
 import { salvarRegistroClientes } from 'src/services/registros/save-clientes';
 import type { DistritalCode } from 'src/utils/historico-file';

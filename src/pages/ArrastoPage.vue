@@ -8,7 +8,7 @@
         </div>
         <h1 class="page-header__title">Arrasto</h1>
         <p class="page-header__subtitle">
-          Informe as quantidades na aba Materiais e acompanhe o peso calculado na Síntese.
+          Informe as quantidades na aba Materiais e acompanhe o peso calculado na Sintese.
         </p>
       </header>
 
@@ -49,7 +49,7 @@
             :class="{ 'arrasto-tabs__btn--active': abaAtiva === 'sintese' }"
             @click="abaAtiva = 'sintese'"
           >
-            SÍNTESE
+            SINTESE
           </button>
           <button
             type="button"
@@ -96,6 +96,7 @@
                 emit-value
                 map-options
                 hide-bottom-space
+                clearable
                 :error="obraFieldHasError('distrital')"
                 :error-message="obraFieldError('distrital') ?? undefined"
               />
@@ -115,14 +116,21 @@
               />
             </div>
             <div class="col-12 col-md-4">
-              <q-input
+              <q-select
                 v-model="obra.cidade"
+                :options="municipioOptionsFiltered"
                 label="Cidade *"
                 outlined
                 dense
                 hide-bottom-space
+                clearable
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="0"
                 :error="obraFieldHasError('cidade')"
                 :error-message="obraFieldError('cidade') ?? undefined"
+                @filter="filterMunicipios"
               />
             </div>
           </div>
@@ -178,14 +186,31 @@
             <div class="col-12 col-md-4">
               <q-input
                 v-model.number="precoUnitario"
-                type="number"
-                min="0"
-                step="0.01"
                 label="Preço Unit."
                 outlined
                 dense
                 hide-bottom-space
-              />
+                inputmode="decimal"
+                :readonly="!precoUnitarioLiberado"
+                :filled="!precoUnitarioLiberado"
+                @focus="solicitarSenhaPrecoUnitario"
+              >
+                <template #append>
+                  <q-icon
+                    :name="precoUnitarioLiberado ? 'lock_open' : 'lock'"
+                    class="cursor-pointer"
+                    @click="solicitarSenhaPrecoUnitario"
+                  >
+                    <q-tooltip>
+                      {{
+                        precoUnitarioLiberado
+                          ? 'Edição liberada'
+                          : 'Bloqueado — informe a senha para editar'
+                      }}
+                    </q-tooltip>
+                  </q-icon>
+                </template>
+              </q-input>
             </div>
             <div class="col-12 col-md-4">
               <q-input
@@ -372,6 +397,7 @@ import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import distritaisData from 'src/data/arrasto-distritais.json';
+import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
 import materiaisData from 'src/data/arrasto-materiais.json';
 import type { ArrastoObra } from 'src/stores/arrasto';
 import { useArrastoStore } from 'src/stores/arrasto';
@@ -400,12 +426,36 @@ const { setQuantidade, resetForm } = store;
 const abaAtiva = ref<'sintese' | 'materiais'>('materiais');
 const filtroMateriais = ref('');
 const validacaoAtiva = ref(false);
+const precoUnitarioLiberado = ref(false);
+const PRECO_UNITARIO_SENHA = 'CGB123';
 const materiais = materiaisData as ArrastoMaterial[];
 
 const distritalOptions = (distritaisData as string[]).map((value) => ({
   label: formatDistritalLabel(value),
   value,
 }));
+
+const municipioOptions = municipiosMaranhaoData as string[];
+const municipioOptionsFiltered = ref(municipioOptions);
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function filterMunicipios(
+  val: string,
+  update: (callback: () => void) => void,
+) {
+  update(() => {
+    const needle = normalizeSearch(val);
+    municipioOptionsFiltered.value = needle === ''
+      ? municipioOptions
+      : municipioOptions.filter((m) => normalizeSearch(m).includes(needle));
+  });
+}
 
 const materiaisColumns: QTableColumn<ArrastoMaterial>[] = [
   { name: 'familia', label: 'Família', field: 'familia', align: 'left', sortable: true },
@@ -612,7 +662,42 @@ function handleReset() {
     resetForm();
     validacaoAtiva.value = false;
     filtroMateriais.value = '';
+    precoUnitarioLiberado.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
+  });
+}
+
+function solicitarSenhaPrecoUnitario() {
+  if (precoUnitarioLiberado.value) return;
+
+  $q.dialog({
+    title: 'Campo protegido',
+    message: 'Informe a senha para alterar o preço unitário.',
+    prompt: {
+      model: '',
+      type: 'password',
+      outlined: true,
+      dense: true,
+      label: 'Senha',
+      isValid: (val) => val.length > 0,
+    },
+    cancel: { label: 'Cancelar', flat: true },
+    ok: { label: 'Liberar', color: 'primary', unelevated: true },
+    persistent: true,
+  }).onOk((senha: string) => {
+    if (senha === PRECO_UNITARIO_SENHA) {
+      precoUnitarioLiberado.value = true;
+      $q.notify({
+        type: 'positive',
+        message: 'Preço unitário liberado para edição.',
+      });
+      return;
+    }
+
+    $q.notify({
+      type: 'negative',
+      message: 'Senha incorreta.',
+    });
   });
 }
 

@@ -24,7 +24,8 @@ const DEPOIS_LBL_R = 333;  // fim da coluna do rótulo "DEPOIS"
 // Blocos: 4 por página, passo de 128 pt
 const BLOCK_PITCH = 128;
 const BLOCKS_PER_PAGE = 4;
-const FIRST_PG_TOP = 130;
+const FIRST_PG_TOP_CALCADA = 130;
+const FIRST_PG_TOP_CUSTEIO = 105;
 const PHOTO_OFFSET = 12;   // do topo do "PG:" até o topo da foto
 const PHOTO_H = 113;
 
@@ -86,7 +87,9 @@ function sectionBar(doc: jsPDF, title: string, top: number, bottom: number) {
   doc.text(title, CX, top + h - 2.4, { align: 'center' });
 }
 
-function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra) {
+function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra | CusteioObra, includeReparo = true) {
+  const title = includeReparo ? 'EVIDÊNCIA REPARO DE CALÇADA' : 'EVIDÊNCIA CUSTEIO';
+
   // Quadro do logo + título
   box(doc, X0, 30, X1 - X0, 26, false);
   doc.line(151, 30, 151, 56); // divisória logo|título
@@ -94,7 +97,7 @@ function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.8);
   doc.setTextColor(...BLACK);
-  doc.text('EVIDÊNCIA REPARO DE CALÇADA', (151 + X1) / 2, 47, { align: 'center' });
+  doc.text(title, (151 + X1) / 2, 47, { align: 'center' });
 
   // DADOS OBRA
   sectionBar(doc, 'DADOS OBRA', 59, 68);
@@ -104,17 +107,19 @@ function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra) {
   field(doc, 'DESCRIÇÃO OBRA:', obra.descricaoObra, 37, 115, 115, 333, 81, 90);
   field(doc, 'CIDADE:', obra.municipio, 333, 369, 369, 545, 81, 90);
 
-  // DADOS REPARO DE CALÇADAS
-  sectionBar(doc, 'DADOS REPARO DE CALÇADAS', 93, 103);
-  const valorSap = obra.valorSap ?? 0;
-  const valorRs = calcularValorRs(obra.quantidade, obra.valorSap);
-  const qtdTxt = obra.quantidade != null ? String(obra.quantidade) : '';
-  field(doc, 'QUANTIDADE:', qtdTxt, 37, 115, 115, 187, 105, 115);
-  field(doc, 'VALOR SAP:', formatBRL(valorSap), 187, 291, 291, 369, 105, 115);
-  field(doc, 'VALOR R$:', formatBRL(valorRs), 369, 441, 441, 545, 105, 115);
-
-  // EVIDENCIAS
-  sectionBar(doc, 'EVIDENCIAS', 118, 128);
+  if (includeReparo && 'quantidade' in obra) {
+    // DADOS REPARO DE CALÇADAS
+    sectionBar(doc, 'DADOS REPARO DE CALÇADAS', 93, 103);
+    const valorSap = obra.valorSap ?? 0;
+    const valorRs = calcularValorRs(obra.quantidade, obra.valorSap);
+    const qtdTxt = obra.quantidade != null ? String(obra.quantidade) : '';
+    field(doc, 'QUANTIDADE:', qtdTxt, 37, 115, 115, 187, 105, 115);
+    field(doc, 'VALOR SAP:', formatBRL(valorSap), 187, 291, 291, 369, 105, 115);
+    field(doc, 'VALOR R$:', formatBRL(valorRs), 369, 441, 441, 545, 105, 115);
+    sectionBar(doc, 'EVIDENCIAS', 118, 128);
+  } else {
+    sectionBar(doc, 'EVIDENCIAS', 93, 103);
+  }
 }
 
 function verticalLabel(doc: jsPDF, text: string, centerX: number, boxTop: number) {
@@ -144,8 +149,13 @@ function drawPhoto(doc: jsPDF, dataUrl: string, x0: number, x1: number, top: num
 }
 
 /** Desenha um bloco de evidência no slot indicado (0..3) da página. */
-function drawBlock(doc: jsPDF, ev: CalcadaEvidencia, slot: number) {
-  const pgTop = FIRST_PG_TOP + slot * BLOCK_PITCH;
+function drawBlock(
+  doc: jsPDF,
+  ev: CalcadaEvidencia | CusteioEvidencia,
+  slot: number,
+  firstPgTop: number,
+) {
+  const pgTop = firstPgTop + slot * BLOCK_PITCH;
   const photoTop = pgTop + PHOTO_OFFSET;
 
   // Linha PG (só na metade esquerda, como no modelo)
@@ -187,9 +197,9 @@ export async function exportCalcadaToPdf(
       doc.addPage();
     }
     if (slot === 0) {
-      drawHeader(doc, logo, obra);
+      drawHeader(doc, logo, obra, true);
     }
-    drawBlock(doc, preenchidas[i]!, slot);
+    drawBlock(doc, preenchidas[i]!, slot, FIRST_PG_TOP_CALCADA);
   }
 
   const fileName = buildCalcadaExportFileName(obra, 'pdf');

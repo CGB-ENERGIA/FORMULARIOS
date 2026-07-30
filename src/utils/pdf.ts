@@ -233,7 +233,7 @@ function collectFotoSlots(consumidores: Consumidor[]): FotoSlot[] {
     const nome = c.nome.trim() || `Cliente ${c.id}`;
     if (c.fotoPadrao) {
       slots.push({
-        label: 'FOTO DO PADRÃO',
+        label: 'FOTO DA FACHADA',
         cliente: nome,
         numero: c.id,
         dataUrl: c.fotoPadrao,

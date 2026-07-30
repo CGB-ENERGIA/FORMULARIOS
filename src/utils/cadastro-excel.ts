@@ -111,7 +111,7 @@ function fillForm(sheet: ExcelJS.Worksheet, form: CadastroForm) {
   setLabeled(sheet, 'A21', 'Nº Comp: ', form.numComp);
   setLabeled(sheet, 'A22', 'Nº Poste: ', form.numPoste);
   setLabeled(sheet, 'A23', 'Med Inst: ', form.medInst);
-  setLabeled(sheet, 'A24', 'Med Ant: ', form.medAnt);
+  setLabeled(sheet, 'A24', 'Medidor vizinho: ', form.medAnt);
   setLabeled(sheet, 'A26', 'Ligada Fase: ', form.ligadaFase);
 
   setLabeled(sheet, 'A30', 'POT: ', form.pot);

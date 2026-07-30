@@ -1,5 +1,9 @@
 import type { Consumidor } from '../stores/consumidores';
 
+export function sanitizeDigits(value: string | number | null | undefined): string {
+  return String(value ?? '').replace(/\D/g, '');
+}
+
 export function consumidorComDados(c: Consumidor) {
   return Boolean(
     c.nome ||
@@ -104,7 +108,7 @@ export function validateConsumidoresParaExportacao(consumidores: Consumidor[]): 
     }
 
     if (!consumidor.fotoPadrao?.trim()) {
-      errors.push(`Linha ${consumidor.id}${identificacao}: anexe a FOTO DO PADRÃO.`);
+      errors.push(`Linha ${consumidor.id}${identificacao}: anexe a FOTO DA FACHADA.`);
     }
 
     if (!consumidor.fotoMedidor?.trim()) {

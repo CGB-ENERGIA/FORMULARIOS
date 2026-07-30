@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { consumidorComDados } from '../utils/consumidor-helpers';
 import type { DistritalCode } from 'src/utils/historico-file';
 
-export const FORNECEDOR_FIXO = 'CGB ENGENHARIA' as const;
+export const FORNECEDOR_FIXO = 'CGB ENERGIA' as const;
 export const REGIONAL_FIXA = 'CENTRO' as const;
 export const TEC_OBRA_FIXO = 'ZOZIMO MENDES' as const;
 
@@ -33,7 +33,7 @@ export interface Consumidor {
   ramalTriplex: RamalOpcao;
   posteLigacao: string;
   dataLigacao: string;
-  /** Base64 data URL da foto do padrão (obrigatória na exportação). */
+  /** Base64 data URL da foto da fachada (obrigatória na exportação). */
   fotoPadrao: string;
   /** Base64 data URL da foto do medidor (obrigatória na exportação). */
   fotoMedidor: string;

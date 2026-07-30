@@ -16,8 +16,8 @@
         outside-arrows
         mobile-arrows
       >
-        <q-tab name="consumidores" icon="groups" label="Relação na obra" no-caps />
-        <q-tab name="cadastro" icon="assignment_ind" label="Solicitação de serviço" no-caps />
+        <q-tab name="consumidores" icon="groups" label="Consumidores" no-caps />
+        <q-tab name="cadastro" icon="assignment_ind" label="Cadastro" no-caps />
         <q-tab name="consultar" icon="fact_check" label="Controle" no-caps />
       </q-tabs>
 
@@ -101,14 +101,14 @@ watch(tab, (next, prev) => {
       syncFromConsumidores();
       $q.notify({
         type: 'info',
-        message: 'Dados da relação sincronizados com a solicitação de serviço.',
+        message: 'Dados de Consumidores sincronizados com Cadastro.',
         timeout: 2200,
       });
     } else if (prev === 'cadastro' && next === 'consumidores') {
       syncFromCadastro();
       $q.notify({
         type: 'info',
-        message: 'Dados do cadastro sincronizados com a relação na obra.',
+        message: 'Dados de Cadastro sincronizados com Consumidores.',
         timeout: 2200,
       });
     }

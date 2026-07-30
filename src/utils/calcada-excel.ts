@@ -66,9 +66,11 @@ function getImageExtension(dataUrl: string): ExcelJS.ImageExtension {
   return 'png';
 }
 
-function fillObra(sheet: ExcelJS.Worksheet, obra: CalcadaObra) {
-  const valorRs = calcularValorRs(obra.quantidade, obra.valorSap);
-
+function fillObra(
+  sheet: ExcelJS.Worksheet,
+  obra: CalcadaObra | CusteioObra,
+  includeReparo = true,
+) {
   // DADOS OBRA — substitui as fórmulas INDEX/MATCH por valores diretos
   sheet.getCell('D8').value = obra.pep;
   sheet.getCell('H8').value = obra.nota;
@@ -76,10 +78,12 @@ function fillObra(sheet: ExcelJS.Worksheet, obra: CalcadaObra) {
   sheet.getCell('E9').value = obra.descricaoObra;
   sheet.getCell('K9').value = obra.municipio;
 
-  // DADOS REPARO DE CALÇADAS
-  sheet.getCell('E13').value = obra.quantidade ?? 0;
-  sheet.getCell('I13').value = obra.valorSap ?? 0;
-  sheet.getCell('M13').value = { formula: 'I13*E13', result: valorRs };
+  if (includeReparo && 'quantidade' in obra) {
+    const valorRs = calcularValorRs(obra.quantidade, obra.valorSap);
+    sheet.getCell('E13').value = obra.quantidade ?? 0;
+    sheet.getCell('I13').value = obra.valorSap ?? 0;
+    sheet.getCell('M13').value = { formula: 'I13*E13', result: valorRs };
+  }
 
   // Helper oculto: PEP sem pontuação
   sheet.getCell('Q8').value = calcularPepLimpo(obra.pep);
@@ -116,7 +120,12 @@ const BANCO_LAST_COL = 13;
  * é reconstruído com autoFilter (setas de filtro) e as larguras originais —
  * o cabeçalho e os estilos das células são mantidos.
  */
-function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: boolean) {
+function fillBanco(
+  sheet: ExcelJS.Worksheet,
+  obra: CalcadaObra | CusteioObra,
+  temEvidencia: boolean,
+  includeReparo = true,
+) {
   // Remove a tabela (mantém o cabeçalho e os estilos das células)
   try {
     if (sheet.getTable(BANCO_TABLE)) {
@@ -143,7 +152,9 @@ function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: bo
   sheet.getCell(`E${r}`).value = obra.descricaoObra;               // DESCRITIVO
   sheet.getCell(`F${r}`).value = obra.distrital;                    // DISTRITAL
   sheet.getCell(`G${r}`).value = obra.municipio;                    // MUNICIPIO
-  sheet.getCell(`H${r}`).value = obra.quantidade ?? null;          // QUANTIDADE CALÇADA
+  if (includeReparo && 'quantidade' in obra) {
+    sheet.getCell(`H${r}`).value = obra.quantidade ?? null;        // QUANTIDADE CALÇADA
+  }
   sheet.getCell(`M${r}`).value = temEvidencia ? 'Sim' : '';        // EVIDÊNCIA ANEXADA?
 
   // Restaura as setas de filtro e as larguras das colunas (perdidas com a tabela).
@@ -160,7 +171,7 @@ function fillBanco(sheet: ExcelJS.Worksheet, obra: CalcadaObra, temEvidencia: bo
 function insertEvidencia(
   workbook: ExcelJS.Workbook,
   sheet: ExcelJS.Worksheet,
-  evidencia: CalcadaEvidencia,
+  evidencia: CalcadaEvidencia | CusteioEvidencia,
   blocoIndex: number,
 ) {
   const bloco = BLOCOS[blocoIndex];

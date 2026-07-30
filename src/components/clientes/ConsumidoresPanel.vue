@@ -150,14 +150,21 @@
               />
             </div>
             <div class="col-12 col-md-6">
-              <q-input
+              <q-select
                 v-model="obra.municipio"
+                :options="municipioOptionsFiltered"
                 label="Município *"
                 outlined
                 dense
                 hide-bottom-space
+                clearable
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="0"
                 :error="obraFieldHasError('municipio')"
                 :error-message="obraFieldError('municipio') ?? undefined"
+                @filter="filterMunicipios"
               />
             </div>
           </div>
@@ -235,7 +242,7 @@
                 <q-th colspan="3">PADRÃO</q-th>
                 <q-th rowspan="2" style="min-width: 140px">POSTE DE LIGAÇÃO *</q-th>
                 <q-th rowspan="2" style="min-width: 120px">DATA LIGAÇÃO</q-th>
-                <q-th rowspan="2" style="min-width: 88px">FOTO DO PADRÃO *</q-th>
+                <q-th rowspan="2" style="min-width: 88px">FOTO DA FACHADA *</q-th>
                 <q-th rowspan="2" style="min-width: 88px">FOTO DO MEDIDOR *</q-th>
                 <q-th rowspan="2" auto-width></q-th>
               </q-tr>
@@ -263,7 +270,9 @@
                     dense
                     outlined
                     hide-bottom-space
+                    type="tel"
                     inputmode="numeric"
+                    pattern="[0-9]*"
                     :error="Boolean(medidorFieldError(props.row)) || medidorObrigatorioPendente(props.row)"
                     :error-message="
                       medidorFieldError(props.row)
@@ -317,7 +326,7 @@
                     }"
                     role="button"
                     tabindex="0"
-                    :title="props.row.fotoPadrao ? 'Clique para visualizar' : 'Clique para anexar foto do padrão'"
+                    :title="props.row.fotoPadrao ? 'Clique para visualizar' : 'Clique para anexar foto da fachada'"
                     @click="onFotoCellClick(props.row, props.rowIndex, 'padrao')"
                     @keydown.enter.prevent="onFotoCellClick(props.row, props.rowIndex, 'padrao')"
                     @keydown.space.prevent="onFotoCellClick(props.row, props.rowIndex, 'padrao')"
@@ -325,7 +334,7 @@
                     <img
                       v-if="props.row.fotoPadrao"
                       :src="props.row.fotoPadrao"
-                      alt="Foto do padrão"
+                      alt="Foto da fachada"
                       class="foto-cell__thumb"
                     />
                     <q-icon
@@ -446,11 +455,13 @@ import { consumidorPreenchido } from 'src/utils/excel';
 import {
   applyTipoLigacaoFromMedidor,
   getMedidorFieldError,
+  sanitizeDigits,
   validateConsumidoresParaExportacao,
   consumidorComDados,
 } from 'src/utils/consumidor-helpers';
 import { getObraFieldError, isObraCompleta, validateObraParaExportacao } from 'src/utils/obra-helpers';
 import type { DistritalCode } from 'src/utils/historico-file';
+import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
 
 type FotoTipo = 'padrao' | 'medidor';
 
@@ -459,6 +470,28 @@ const router = useRouter();
 const store = useConsumidoresStore();
 const cadastroStore = useCadastroStore();
 const { obra, consumidores, distrital } = storeToRefs(store);
+
+const municipioOptions = municipiosMaranhaoData as string[];
+const municipioOptionsFiltered = ref(municipioOptions);
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function filterMunicipios(
+  val: string,
+  update: (callback: () => void) => void,
+) {
+  update(() => {
+    const needle = normalizeSearch(val);
+    municipioOptionsFiltered.value = needle === ''
+      ? municipioOptions
+      : municipioOptions.filter((m) => normalizeSearch(m).includes(needle));
+  });
+}
 
 function onDistritalPicked(value: DistritalCode | null) {
   distrital.value = value ?? '';
@@ -499,7 +532,7 @@ function triggerFoto(rowIndex: number, tipo: FotoTipo) {
 function onFotoCellClick(consumidor: Consumidor, rowIndex: number, tipo: FotoTipo) {
   const foto = tipo === 'padrao' ? consumidor.fotoPadrao : consumidor.fotoMedidor;
   if (foto) {
-    openFotoPreview(foto, tipo === 'padrao' ? 'FOTO DO PADRÃO' : 'FOTO DO MEDIDOR');
+    openFotoPreview(foto, tipo === 'padrao' ? 'FOTO DA FACHADA' : 'FOTO DO MEDIDOR');
     return;
   }
   triggerFoto(rowIndex, tipo);
@@ -574,7 +607,7 @@ function medidorObrigatorioPendente(row: Consumidor): boolean {
 }
 
 function onNumeroMedidorInput(consumidor: Consumidor, value: string | number | null) {
-  consumidor.numeroMedidor = String(value ?? '').replace(/\D/g, '');
+  consumidor.numeroMedidor = sanitizeDigits(value);
   applyTipoLigacaoFromMedidor(consumidor);
 }
 

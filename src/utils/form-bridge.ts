@@ -48,9 +48,9 @@ function pickExclusiveCadastro(prev: CadastroForm | undefined, next: CadastroFor
     fabricante: prev.fabricante || next.fabricante,
     dataFabr: prev.dataFabr || next.dataFabr,
     numSerie: prev.numSerie || next.numSerie,
-    nomeResponsavel: prev.nomeResponsavel || next.nomeResponsavel,
+    nomeResponsavel: next.nomeResponsavel,
     dataExecucao: prev.dataExecucao || next.dataExecucao,
-    horaExecucao: prev.horaExecucao || next.horaExecucao,
+    horaExecucao: next.horaExecucao,
     empresa: prev.empresa?.trim() || next.empresa?.trim() || 'CGB ENERGIA',
   };
 }
@@ -160,7 +160,13 @@ export function syncConsumidoresIntoCadastro(
   const base = clientesAtuais[0] ?? createDefaultCadastroForm();
   return preenchidos.map((consumidor, index) => {
     const mapped = consumidorToCadastroForm(consumidor, obra, base);
-    return pickExclusiveCadastro(clientesAtuais[index], mapped);
+    const merged = pickExclusiveCadastro(clientesAtuais[index], mapped);
+    const prevCliente = clientesAtuais[index];
+    return {
+      ...merged,
+      nomeResponsavel: prevCliente?.nomeResponsavel?.trim() ?? '',
+      horaExecucao: prevCliente?.horaExecucao?.trim() ?? '',
+    };
   });
 }
 

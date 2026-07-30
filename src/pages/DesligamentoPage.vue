@@ -46,14 +46,21 @@
               <q-input v-model="obra.fornecedor" label="Fornecedor *" outlined dense hide-bottom-space readonly />
             </div>
             <div class="col-12 col-md-6">
-              <q-input
+              <q-select
                 v-model="obra.cidade"
+                :options="municipioOptionsFiltered"
                 label="Cidade *"
                 outlined
                 dense
                 hide-bottom-space
+                clearable
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="0"
                 :error="obraFieldHasError('cidade')"
                 :error-message="obraFieldError('cidade') ?? undefined"
+                @filter="filterMunicipios"
               />
             </div>
             <div class="col-12">
@@ -387,7 +394,16 @@
                   <q-input v-model="props.row.contaContrato" dense outlined hide-bottom-space />
                 </q-td>
                 <q-td>
-                  <q-input v-model="props.row.numeroMedidor" dense outlined hide-bottom-space />
+                  <q-input
+                    :model-value="props.row.numeroMedidor"
+                    dense
+                    outlined
+                    hide-bottom-space
+                    type="tel"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    @update:model-value="props.row.numeroMedidor = sanitizeDigits($event)"
+                  />
                 </q-td>
                 <q-td>
                   <q-input v-model="props.row.nomeCompleto" dense outlined hide-bottom-space />
@@ -542,6 +558,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useDesligamentoStore } from 'src/stores/desligamento';
 import { parseSiMesFromPdf, parseConsumidoresFromPdf, parseDatesFromPdf } from 'src/utils/parse-si-pdf';
 import type { DesligamentoObra, DesligamentoSI } from 'src/stores/desligamento';
+import { sanitizeDigits } from 'src/utils/consumidor-helpers';
 import {
   consumidorDesligamentoComDados,
   contarPorProtocolar,
@@ -551,11 +568,34 @@ import {
 } from 'src/utils/desligamento-helpers';
 import { exportDesligamentoToExcel } from 'src/utils/desligamento-excel';
 import { exportDesligamentoToPdf } from 'src/utils/desligamento-pdf';
+import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
 
 const $q = useQuasar();
 const store = useDesligamentoStore();
 const { obra, solicitacao, consumidores, evidencias } = storeToRefs(store);
 const { addConsumidor, removeConsumidor, resetForm } = store;
+
+const municipioOptions = municipiosMaranhaoData as string[];
+const municipioOptionsFiltered = ref(municipioOptions);
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function filterMunicipios(
+  val: string,
+  update: (callback: () => void) => void,
+) {
+  update(() => {
+    const needle = normalizeSearch(val);
+    municipioOptionsFiltered.value = needle === ''
+      ? municipioOptions
+      : municipioOptions.filter((m) => normalizeSearch(m).includes(needle));
+  });
+}
 
 const siPdfInput = ref<HTMLInputElement | null>(null);
 const siDate = ref('');
