@@ -1,1 +1,0 @@
-import{u as e}from"./index-E1l_Xr6f.js";var t=e(({app:e,store:t})=>{e.use(t)});export{t as default};
