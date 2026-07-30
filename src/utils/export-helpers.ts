@@ -8,9 +8,13 @@ export function sanitizeFileNamePart(value: string): string {
   return value.trim().replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ');
 }
 
+export function sanitizePepForFileName(value: string): string {
+  return value.trim().replace(/[^a-zA-Z0-9]/g, '');
+}
+
 export function buildExportFileName(obra: ObraInfo, extension: 'xlsx' | 'pdf'): string {
-  const pep = sanitizeFileNamePart(obra.elementoPep) || 'obra';
-  return `CONSUMIDORES - ${pep}.${extension}`;
+  const pep = sanitizePepForFileName(obra.elementoPep) || 'obra';
+  return `RELAÇÃO DE CONSUMIDORES - ${pep}.${extension}`;
 }
 
 export function buildDesligamentoExportFileName(
@@ -37,6 +41,6 @@ export function buildCusteioExportFileName(cabecalho: { componenteOuPg?: string;
 }
 
 export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' | 'pdf' = 'xlsx'): string {
-  const pep = sanitizeFileNamePart(form.pep) || sanitizeFileNamePart(form.nome) || 'cadastro';
-  return `CADASTRO - ${pep}.${extension}`;
+  const pep = sanitizePepForFileName(form.pep) || sanitizePepForFileName(form.nome) || 'cadastro';
+  return `CADASTRO CONSUMIDORES - ${pep}.${extension}`;
 }
