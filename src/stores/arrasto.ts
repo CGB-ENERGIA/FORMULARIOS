@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import { getProtectedDefault } from '../utils/protected-defaults';
 
 export interface ArrastoObra {
   pep: string;
@@ -50,7 +51,7 @@ function loadPersistedState(): ArrastoPersistedState | null {
       precoUnitario:
         typeof parsed.precoUnitario === 'number' && !Number.isNaN(parsed.precoUnitario)
           ? parsed.precoUnitario
-          : PRECO_UNITARIO_PADRAO,
+          : getProtectedDefault('arrasto', 'precoUnitario', PRECO_UNITARIO_PADRAO),
       quantidades: parsed.quantidades ?? {},
       evidencias: Array.isArray(parsed.evidencias)
         ? Array.from({ length: 8 }, (_, index) => parsed.evidencias?.[index] ?? null)
@@ -78,7 +79,9 @@ export const useArrastoStore = defineStore('arrasto', () => {
 
   const obra = ref<ArrastoObra>(persisted?.obra ?? createDefaultObra());
   const arrastoEmM = ref<number | null>(persisted?.arrastoEmM ?? null);
-  const precoUnitario = ref(persisted?.precoUnitario ?? PRECO_UNITARIO_PADRAO);
+  const precoUnitario = ref(
+    persisted?.precoUnitario ?? getProtectedDefault('arrasto', 'precoUnitario', PRECO_UNITARIO_PADRAO),
+  );
   const quantidades = ref<Record<number, number>>(persisted?.quantidades ?? {});
   const evidencias = ref<(string | null)[]>(persisted?.evidencias ?? Array(8).fill(null));
 
@@ -109,7 +112,7 @@ export const useArrastoStore = defineStore('arrasto', () => {
   function resetForm() {
     obra.value = createDefaultObra();
     arrastoEmM.value = null;
-    precoUnitario.value = PRECO_UNITARIO_PADRAO;
+    precoUnitario.value = getProtectedDefault('arrasto', 'precoUnitario', PRECO_UNITARIO_PADRAO);
     quantidades.value = {};
     evidencias.value = Array(8).fill(null);
     clearPersistedState();

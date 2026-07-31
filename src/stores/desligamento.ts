@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { getProtectedDefault } from '../utils/protected-defaults';
 
 export type ProtocolarOpcao = 'SIM' | 'NAO' | '';
 
@@ -32,6 +33,25 @@ export interface DesligamentoConsumidor {
   protocolar: ProtocolarOpcao;
 }
 
+function createDefaultSolicitacao(): DesligamentoSI {
+  return {
+    inicioDesligamento: '',
+    fimDesligamento: '',
+    numeroOperacional: '',
+    numeroBarramento: '',
+    valorUnitarioSemProtocolo: getProtectedDefault(
+      'desligamento',
+      'valorUnitarioSemProtocolo',
+      '7,04',
+    ),
+    valorUnitarioComProtocolo: getProtectedDefault(
+      'desligamento',
+      'valorUnitarioComProtocolo',
+      '8,24',
+    ),
+  };
+}
+
 function createEmptyConsumidor(id: number): DesligamentoConsumidor {
   return {
     id,
@@ -55,14 +75,7 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
     protocolar: '',
   });
 
-  const solicitacao = ref<DesligamentoSI>({
-    inicioDesligamento: '',
-    fimDesligamento: '',
-    numeroOperacional: '',
-    numeroBarramento: '',
-    valorUnitarioSemProtocolo: '7,04',
-    valorUnitarioComProtocolo: '8,24',
-  });
+  const solicitacao = ref<DesligamentoSI>(createDefaultSolicitacao());
 
   const consumidores = ref<DesligamentoConsumidor[]>(
     Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1)),
@@ -97,14 +110,7 @@ export const useDesligamentoStore = defineStore('desligamento', () => {
       siMes: '',
       protocolar: '',
     };
-    solicitacao.value = {
-      inicioDesligamento: '',
-      fimDesligamento: '',
-      numeroOperacional: '',
-      numeroBarramento: '',
-      valorUnitarioSemProtocolo: '7,04',
-      valorUnitarioComProtocolo: '8,24',
-    };
+    solicitacao.value = createDefaultSolicitacao();
     consumidores.value = Array.from({ length: 20 }, (_, i) => createEmptyConsumidor(i + 1));
     evidencias.value = Array(8).fill(null);
   }

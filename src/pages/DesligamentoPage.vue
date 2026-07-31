@@ -338,14 +338,6 @@
             @click="handleExportPdf"
           />
           <q-btn
-            unelevated
-            icon="download"
-            :label="$q.screen.gt.xs ? 'Exportar Excel' : undefined"
-            class="action-btn--excel"
-            no-caps
-            @click="handleExport"
-          />
-          <q-btn
             outline
             color="negative"
             icon="restart_alt"
@@ -536,15 +528,6 @@
           size="md"
           @click="handleExportPdf"
         />
-        <q-btn
-          unelevated
-          icon="download"
-          label="Exportar Excel"
-          class="action-btn--excel"
-          no-caps
-          size="md"
-          @click="handleExport"
-        />
       </div>
     </div>
   </q-page>
@@ -554,7 +537,7 @@
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useDesligamentoStore } from 'src/stores/desligamento';
 import { parseSiMesFromPdf, parseConsumidoresFromPdf, parseDatesFromPdf } from 'src/utils/parse-si-pdf';
 import type { DesligamentoObra, DesligamentoSI } from 'src/stores/desligamento';
@@ -566,9 +549,9 @@ import {
   getDesligamentoSIFieldError,
   validateDesligamentoParaExportacao,
 } from 'src/utils/desligamento-helpers';
-import { exportDesligamentoToExcel } from 'src/utils/desligamento-excel';
 import { exportDesligamentoToPdf } from 'src/utils/desligamento-pdf';
 import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
+import { setProtectedDefault } from 'src/utils/protected-defaults';
 
 const $q = useQuasar();
 const store = useDesligamentoStore();
@@ -602,6 +585,22 @@ const siDate = ref('');
 const desligamentoValidacaoAtiva = ref(false);
 const valoresUnitariosLiberados = ref(false);
 const VALORES_UNITARIOS_SENHA = 'CGB123';
+
+watch(
+  () => solicitacao.value.valorUnitarioSemProtocolo,
+  (valor) => {
+    if (!valoresUnitariosLiberados.value || !valor.trim()) return;
+    setProtectedDefault('desligamento', 'valorUnitarioSemProtocolo', valor.trim());
+  },
+);
+
+watch(
+  () => solicitacao.value.valorUnitarioComProtocolo,
+  (valor) => {
+    if (!valoresUnitariosLiberados.value || !valor.trim()) return;
+    setProtectedDefault('desligamento', 'valorUnitarioComProtocolo', valor.trim());
+  },
+);
 
 function solicitarSenhaValoresUnitarios() {
   if (valoresUnitariosLiberados.value) return;
@@ -949,29 +948,6 @@ function ensureExportavel(): boolean {
     return false;
   }
   return true;
-}
-
-async function handleExport() {
-  if (!ensureExportavel()) return;
-
-  try {
-    const fileName = await exportDesligamentoToExcel(
-      obra.value,
-      solicitacao.value,
-      consumidores.value,
-      evidencias.value,
-    );
-    $q.notify({
-      type: 'positive',
-      message: `Arquivo ${fileName} gerado com sucesso.`,
-    });
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error instanceof Error ? error.message : 'Erro ao exportar Excel.',
-    });
-    console.error(error);
-  }
 }
 
 async function handleExportPdf() {

@@ -16,7 +16,6 @@
       <div class="action-bar action-bar--top q-mb-md">
         <div class="action-bar__actions action-bar__actions--end">
           <q-btn outline color="negative" icon="restart_alt" label="LIMPAR" no-caps @click="handleReset" />
-          <q-btn unelevated icon="download" label="EXCEL" class="action-btn--excel" no-caps @click="handleExportExcel" />
           <q-btn unelevated icon="picture_as_pdf" label="PDF" class="action-btn--pdf" no-caps @click="handleExportPdf" />
         </div>
       </div>
@@ -85,7 +84,26 @@
             </div>
             <div class="col-12 col-md-4">
               <q-input v-model.number="obra.valorSap" type="number" min="0" step="0.01"
-                label="Valor SAP (R$)" outlined dense hide-bottom-space prefix="R$" />
+                label="Valor SAP (R$)" outlined dense hide-bottom-space prefix="R$"
+                :readonly="!valorSapLiberado"
+                :filled="!valorSapLiberado"
+                @focus="solicitarSenhaValorSap">
+                <template #append>
+                  <q-icon
+                    :name="valorSapLiberado ? 'lock_open' : 'lock'"
+                    class="cursor-pointer"
+                    @click="solicitarSenhaValorSap"
+                  >
+                    <q-tooltip>
+                      {{
+                        valorSapLiberado
+                          ? 'Edição liberada'
+                          : 'Bloqueado — informe a senha para editar'
+                      }}
+                    </q-tooltip>
+                  </q-icon>
+                </template>
+              </q-input>
             </div>
             <div class="col-12 col-md-4">
               <div class="calc-field calc-field--highlight">
@@ -188,16 +206,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, h, resolveComponent } from 'vue';
+import { ref, computed, onMounted, onUnmounted, h, resolveComponent, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
 import { useCalcadaStore, evidenciaPreenchida } from 'src/stores/calcada';
 import type { CalcadaEvidencia } from 'src/stores/calcada';
 import { calcularPi, calcularSetor, calcularValorRs, formatBRL } from 'src/utils/calcada-helpers';
-import { exportCalcadaToExcel } from 'src/utils/calcada-excel';
 import { exportCalcadaToPdf } from 'src/utils/calcada-pdf';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
+import { setProtectedDefault } from 'src/utils/protected-defaults';
 
 // ── Componente inline de célula de foto (idêntico ao Desligamento) ───────────
 const PhotoCell = (props: {
@@ -267,6 +285,17 @@ const { obra, evidencias } = storeToRefs(store);
 const { addEvidencia, removeEvidencia, resetForm } = store;
 
 const validacaoAtiva = ref(false);
+const valorSapLiberado = ref(false);
+
+const VALOR_SAP_SENHA = 'CGB123';
+
+watch(
+  () => obra.value.valorSap,
+  (valor) => {
+    if (!valorSapLiberado.value || valor == null || Number.isNaN(valor)) return;
+    setProtectedDefault('calcada', 'valorSap', valor);
+  },
+);
 
 const distritalOptions = (distritaisData as string[]).map((value) => ({
   label: formatDistritalLabel(value),
@@ -437,23 +466,6 @@ function ensureExportavel(): boolean {
   return true;
 }
 
-async function handleExportExcel() {
-  if (!ensureExportavel()) return;
-  const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Excel…', timeout: 0 });
-  try {
-    const { fileName, truncated } = await exportCalcadaToExcel(obra.value, evidencias.value);
-    dismiss();
-    $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
-    if (truncated) {
-      $q.notify({ type: 'warning', timeout: 7000,
-        message: 'O modelo Excel comporta até 9 evidências — as excedentes não foram incluídas (use o PDF para todas).' });
-    }
-  } catch (error) {
-    dismiss();
-    $q.notify({ type: 'negative', message: error instanceof Error ? error.message : 'Erro ao gerar Excel.' });
-  }
-}
-
 async function handleExportPdf() {
   if (!ensureExportavel()) return;
   const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando PDF…', timeout: 0 });
@@ -476,7 +488,42 @@ function handleReset() {
     resetForm();
     selectedKey.value = null;
     validacaoAtiva.value = false;
+    valorSapLiberado.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
+  });
+}
+
+function solicitarSenhaValorSap() {
+  if (valorSapLiberado.value) return;
+
+  $q.dialog({
+    title: 'Campo protegido',
+    message: 'Informe a senha para alterar o Valor SAP.',
+    prompt: {
+      model: '',
+      type: 'password',
+      outlined: true,
+      dense: true,
+      label: 'Senha',
+      isValid: (val) => val.length > 0,
+    },
+    cancel: { label: 'Cancelar', flat: true },
+    ok: { label: 'Liberar', color: 'primary', unelevated: true },
+    persistent: true,
+  }).onOk((senha: string) => {
+    if (senha === VALOR_SAP_SENHA) {
+      valorSapLiberado.value = true;
+      $q.notify({
+        type: 'positive',
+        message: 'Valor SAP liberado para edição.',
+      });
+      return;
+    }
+
+    $q.notify({
+      type: 'negative',
+      message: 'Senha incorreta.',
+    });
   });
 }
 </script>

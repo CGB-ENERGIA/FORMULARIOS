@@ -42,7 +42,12 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'poda',
         component: () => import('pages/PodaPage.vue'),
-        meta: { title: 'PODA & CUSTEIO' },
+        meta: { title: 'PODA' },
+      },
+      {
+        path: 'custeio',
+        component: () => import('pages/CusteioPage.vue'),
+        meta: { title: 'CUSTEIO' },
       },
       {
         path: 'calcada',
@@ -53,7 +58,7 @@ const routes: RouteRecordRaw[] = [
         path: 'secionamento-cerca',
         component: () => import('pages/BlockedFormPage.vue'),
         meta: {
-          title: 'SECCIONAMENTO DE CERCA',
+          title: 'SECCIO. DE CERCA',
           subtitle: 'Formulário de secionamento de cerca.',
           icon: 'fence',
         },

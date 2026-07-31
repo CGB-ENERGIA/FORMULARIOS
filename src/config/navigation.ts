@@ -71,10 +71,17 @@ export const navItems: NavItem[] = [
     category: 'operacao',
   },
   {
-    title: 'PODA & CUSTEIO',
-    caption: 'Relatório de evidências e custeio',
+    title: 'PODA',
+    caption: 'Relatório de evidências de poda',
     icon: 'forest',
     route: '/poda',
+    category: 'operacao',
+  },
+  {
+    title: 'CUSTEIO',
+    caption: 'Relatório de custeio',
+    icon: 'payments',
+    route: '/custeio',
     category: 'operacao',
   },
   {
@@ -85,7 +92,7 @@ export const navItems: NavItem[] = [
     category: 'operacao',
   },
   {
-    title: 'SECCIONAMENTO DE CERCA',
+    title: 'SECCIO. DE CERCA',
     caption: 'Em breve',
     icon: 'fence',
     route: '/secionamento-cerca',

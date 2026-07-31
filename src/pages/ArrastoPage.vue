@@ -24,14 +24,6 @@
           />
           <q-btn
             unelevated
-            icon="download"
-            label="EXCEL"
-            class="action-btn--excel"
-            no-caps
-            @click="handleExport"
-          />
-          <q-btn
-            unelevated
             icon="picture_as_pdf"
             label="PDF"
             class="action-btn--pdf"
@@ -395,13 +387,12 @@
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import distritaisData from 'src/data/arrasto-distritais.json';
 import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
 import materiaisData from 'src/data/arrasto-materiais.json';
 import type { ArrastoObra } from 'src/stores/arrasto';
 import { useArrastoStore } from 'src/stores/arrasto';
-import { exportArrastoToExcel } from 'src/utils/arrasto-excel';
 import { exportArrastoToPdf } from 'src/utils/arrasto-pdf';
 import {
   calcularArrastoEmKm,
@@ -417,6 +408,7 @@ import {
   validateArrastoParaExportacao,
 } from 'src/utils/arrasto-helpers';
 import type { ArrastoMaterial } from 'src/utils/arrasto-types';
+import { setProtectedDefault } from 'src/utils/protected-defaults';
 
 const $q = useQuasar();
 const store = useArrastoStore();
@@ -428,6 +420,14 @@ const filtroMateriais = ref('');
 const validacaoAtiva = ref(false);
 const precoUnitarioLiberado = ref(false);
 const PRECO_UNITARIO_SENHA = 'CGB123';
+
+watch(
+  () => precoUnitario.value,
+  (valor) => {
+    if (!precoUnitarioLiberado.value || Number.isNaN(valor)) return;
+    setProtectedDefault('arrasto', 'precoUnitario', valor);
+  },
+);
 const materiais = materiaisData as ArrastoMaterial[];
 
 const distritalOptions = (distritaisData as string[]).map((value) => ({
@@ -718,36 +718,6 @@ function ensureFoto(): boolean {
     return false;
   }
   return true;
-}
-
-async function handleExport() {
-  const errors = getExportErrors();
-  if (errors.length > 0) {
-    $q.notify({ type: 'negative', message: errors[0] });
-    return;
-  }
-  if (!ensureFoto()) return;
-
-  try {
-    const fileName = await exportArrastoToExcel(
-      obra.value,
-      arrastoEmM.value!,
-      precoUnitario.value,
-      quantidades.value,
-      materiais,
-      evidencias.value,
-    );
-
-    $q.notify({
-      type: 'positive',
-      message: `Arquivo ${fileName} exportado com sucesso.`,
-    });
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error instanceof Error ? error.message : 'Erro ao exportar o Excel.',
-    });
-  }
 }
 
 async function handleExportPdf() {

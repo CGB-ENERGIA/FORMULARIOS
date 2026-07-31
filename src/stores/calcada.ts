@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import { getProtectedDefault } from '../utils/protected-defaults';
 
 export interface CalcadaObra {
   pep: string;
@@ -36,7 +37,7 @@ function createDefaultObra(): CalcadaObra {
     descricaoObra: '',
     municipio: '',
     quantidade: null,
-    valorSap: VALOR_SAP_PADRAO,
+    valorSap: getProtectedDefault('calcada', 'valorSap', VALOR_SAP_PADRAO),
   };
 }
 
