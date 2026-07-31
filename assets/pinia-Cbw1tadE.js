@@ -1,0 +1,1 @@
+import{f as e}from"./index-nw3st4Bq.js";var t=e(({app:e,store:t})=>{e.use(t)});export{t as default};

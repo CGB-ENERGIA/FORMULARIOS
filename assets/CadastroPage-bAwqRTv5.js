@@ -1,0 +1,1 @@
+import{A as e,D as t,d as n,h as r}from"./runtime-core.esm-bundler-Cg_Eizo4.js";import{l as i}from"./index-nw3st4Bq.js";var a=r({__name:`CadastroPage`,setup(r){let a=i();return t(()=>{a.replace({path:`/clientes`,query:{tab:`cadastro`}})}),(t,r)=>(e(),n(`div`))}});export{a as default};

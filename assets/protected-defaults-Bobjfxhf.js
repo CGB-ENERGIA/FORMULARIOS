@@ -1,0 +1,1 @@
+var e=`formularios-web:protected-defaults`;function t(){try{let t=localStorage.getItem(e);if(!t)return{};let n=JSON.parse(t);return n&&typeof n==`object`?n:{}}catch{return{}}}function n(t){try{localStorage.setItem(e,JSON.stringify(t))}catch{}}function r(e,n,r){let i=t()[e]?.[n];return i==null||i===``?r:i}function i(e,r,i){let a=t();a[e]={...a[e],[r]:i},n(a)}export{i as n,r as t};
