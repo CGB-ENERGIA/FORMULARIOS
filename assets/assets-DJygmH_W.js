@@ -1,0 +1,1 @@
+function e(e){return`/consumidores-web/${e.replace(/^\//,``)}`}export{e as t};
