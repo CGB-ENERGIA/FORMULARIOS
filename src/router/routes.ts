@@ -55,6 +55,11 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'CALÇADA' },
       },
       {
+        path: 'supressao',
+        component: () => import('pages/SupressaoPage.vue'),
+        meta: { title: 'SUPRESSÃO VEGETAL' },
+      },
+      {
         path: 'secionamento-cerca',
         component: () => import('pages/BlockedFormPage.vue'),
         meta: {
@@ -70,6 +75,24 @@ const routes: RouteRecordRaw[] = [
           title: 'BASE CONCRETADA',
           subtitle: 'Formulário de base concretada.',
           icon: 'foundation',
+        },
+      },
+      {
+        path: 'expurgo',
+        component: () => import('pages/BlockedFormPage.vue'),
+        meta: {
+          title: 'FORM. EXPURGO',
+          subtitle: 'Formulário de expurgo.',
+          icon: 'delete_sweep',
+        },
+      },
+      {
+        path: 'memoria-calculo-eme',
+        component: () => import('pages/BlockedFormPage.vue'),
+        meta: {
+          title: 'MEM. CÁLCULO EME',
+          subtitle: 'Memória de cálculo de atendimento emergencial.',
+          icon: 'calculate',
         },
       },
     ],

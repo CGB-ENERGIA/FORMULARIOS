@@ -12,6 +12,7 @@
 :root {
   --app-font-display: 'HalvettBlack', 'Arial Black', Impact, sans-serif;
   --app-font: 'HalvettBlack', 'Arial Black', 'Segoe UI', sans-serif;
+  --app-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-display: var(--app-font-display);
   --app-bg: #f3f0ed;
   --app-bg-accent: linear-gradient(180deg, rgba(155, 27, 70, 0.035), transparent 28%);
@@ -95,6 +96,24 @@ input[pattern='[0-9]*'],
 .q-field--readonly .q-field__native,
 .q-field--readonly .q-field__input {
   text-transform: none;
+}
+
+// A fonte de destaque (HalvettBlack Italic) fica reservada a títulos e textos de
+// destaque — campos de formulário usam uma fonte padrão para manter a legibilidade.
+.q-field__native,
+.q-field__input,
+.q-field__label,
+.q-field__bottom,
+.q-field__marginal,
+.q-field__prefix,
+.q-field__suffix,
+input,
+textarea,
+select,
+.search-bar__input {
+  font-family: var(--app-font-ui);
+  font-style: normal;
+  font-weight: 400;
 }
 
 .q-btn {
