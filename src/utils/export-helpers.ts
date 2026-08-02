@@ -32,7 +32,7 @@ export function buildArrastoExportFileName(obra: ArrastoObra, extension: 'xlsm' 
 
 export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' | 'pdf'): string {
   const pep = sanitizePepForFileName(obra.pep) || 'calcada';
-  return `ANEXO REPARO DE CALÇADA - ${pep}.${extension}`;
+  return `FORMULÁRIO REPARO DE CALÇADA - ${pep}.${extension}`;
 }
 
 export function buildCusteioExportFileName(cabecalho: { componenteOuPg?: string; municipio?: string }, extension: 'xlsx' | 'pdf'): string {
