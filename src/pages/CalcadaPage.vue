@@ -46,7 +46,7 @@
                 :error="validacaoAtiva && !obra.descricaoObra.trim()" error-message="Informe a descrição" />
             </div>
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.municipio" label="Município / Cidade" outlined dense hide-bottom-space />
+              <q-input v-model="obra.municipio" label="Município" outlined dense hide-bottom-space />
             </div>
           </div>
 
