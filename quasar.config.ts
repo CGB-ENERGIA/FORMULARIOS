@@ -26,6 +26,8 @@ export default configure(() => ({
   },
   devServer: {
     open: true,
+    host: '0.0.0.0',
+    allowedHosts: true,
   },
   framework: {
     config: {
