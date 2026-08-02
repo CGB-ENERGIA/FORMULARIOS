@@ -13,6 +13,74 @@
       </div>
     </div>
 
+    <q-card flat class="premium-card q-mb-md">
+      <div class="premium-card__header">
+        <div class="premium-card__header-title">
+          <div class="premium-card__header-icon"><q-icon name="description" size="22px" /></div>
+          Relatório de Evidências dos Serviços Executados
+        </div>
+      </div>
+      <q-card-section class="premium-card__body">
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-3">
+            <q-input
+              v-model="cabecalho.pep"
+              label="PEP *"
+              outlined
+              dense
+              hide-bottom-space
+              :error="validacaoAtiva && !cabecalho.pep.trim()"
+              error-message="Informe o PEP"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="cabecalho.base"
+              :options="baseOptions"
+              label="Base *"
+              outlined
+              dense
+              emit-value
+              map-options
+              hide-bottom-space
+              :error="validacaoAtiva && !cabecalho.base"
+              error-message="Informe a base"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="cabecalho.cidade"
+              :options="municipioOptionsFiltered"
+              label="Cidade *"
+              outlined
+              dense
+              hide-bottom-space
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              :error="validacaoAtiva && !cabecalho.cidade.trim()"
+              error-message="Informe a cidade"
+              @filter="filterMunicipios"
+            />
+          </div>
+          <div class="col-12">
+            <q-input
+              v-model="cabecalho.descricaoObra"
+              label="Descrição da Obra *"
+              outlined
+              dense
+              hide-bottom-space
+              type="textarea"
+              autogrow
+              :error="validacaoAtiva && !cabecalho.descricaoObra.trim()"
+              error-message="Informe a descrição da obra"
+            />
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
     <div class="servicos-grid">
       <div
         v-for="(servico, idx) in servicos"
@@ -191,11 +259,42 @@ import { storeToRefs } from 'pinia';
 import { usePodaStore, servicoPreenchido } from 'src/stores/poda';
 import type { PodaServico } from 'src/stores/poda';
 import { exportPodaToPdf } from 'src/utils/poda-pdf';
+import { validatePodaCabecalho } from 'src/utils/poda-helpers';
+import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
+import distritaisData from 'src/data/arrasto-distritais.json';
+import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
 
 const $q = useQuasar();
 const store = usePodaStore();
-const { servicos } = storeToRefs(store);
+const { cabecalho, servicos } = storeToRefs(store);
 const { addServico, removeServico, resetForm } = store;
+
+const baseOptions = (distritaisData as string[]).map((value) => ({
+  label: formatDistritalLabel(value),
+  value,
+}));
+
+const municipioOptions = municipiosMaranhaoData as string[];
+const municipioOptionsFiltered = ref(municipioOptions);
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function filterMunicipios(
+  val: string,
+  update: (callback: () => void) => void,
+) {
+  update(() => {
+    const needle = normalizeSearch(val);
+    municipioOptionsFiltered.value = needle === ''
+      ? municipioOptions
+      : municipioOptions.filter((m) => normalizeSearch(m).includes(needle));
+  });
+}
 
 const validacaoAtiva = ref(false);
 const preenchidosCount = computed(() => servicos.value.filter(servicoPreenchido).length);
@@ -377,6 +476,18 @@ function handleDrop(s: PodaServico, tipo: Tipo, event: DragEvent) {
 
 function ensureExportavel(): boolean {
   validacaoAtiva.value = true;
+
+  const cabecalhoErrors = validatePodaCabecalho(cabecalho.value);
+  if (cabecalhoErrors.length > 0) {
+    $q.notify({
+      type: 'negative',
+      icon: 'warning',
+      message: cabecalhoErrors[0],
+      timeout: 5000,
+    });
+    return false;
+  }
+
   if (preenchidosCount.value === 0) {
     $q.notify({
       type: 'negative',
@@ -393,7 +504,7 @@ async function handleExportPdf() {
   if (!ensureExportavel()) return;
   const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando PDF…', timeout: 0 });
   try {
-    const fileName = await exportPodaToPdf(servicos.value);
+    const fileName = await exportPodaToPdf(cabecalho.value, servicos.value);
     dismiss();
     $q.notify({ type: 'positive', message: `Arquivo ${fileName} gerado com sucesso.` });
   } catch (error) {
@@ -405,7 +516,7 @@ async function handleExportPdf() {
 function handleReset() {
   $q.dialog({
     title: 'Limpar formulário',
-    message: 'Deseja apagar todos os serviços e fotos preenchidos?',
+    message: 'Deseja apagar o cabeçalho, serviços e fotos preenchidos?',
     cancel: true,
     persistent: true,
   }).onOk(() => {

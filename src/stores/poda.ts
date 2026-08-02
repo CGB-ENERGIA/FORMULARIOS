@@ -1,10 +1,33 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+
+export interface PodaCabecalho {
+  pep: string;
+  base: string;
+  cidade: string;
+  descricaoObra: string;
+}
 
 export interface PodaServico {
   id: number;
-  fotoInicio: string; // base64 data URL ou ''
-  fotoFim: string;    // base64 data URL ou ''
+  fotoInicio: string;
+  fotoFim: string;
+}
+
+const STORAGE_KEY = 'formularios-web:poda';
+
+interface PodaPersistedState {
+  cabecalho: PodaCabecalho;
+  servicos: PodaServico[];
+}
+
+function createDefaultCabecalho(): PodaCabecalho {
+  return {
+    pep: '',
+    base: '',
+    cidade: '',
+    descricaoObra: '',
+  };
 }
 
 function createEmptyServico(id: number): PodaServico {
@@ -15,9 +38,54 @@ export function servicoPreenchido(s: PodaServico): boolean {
   return !!(s.fotoInicio || s.fotoFim);
 }
 
+function loadPersistedState(): PodaPersistedState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PodaPersistedState>;
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    const servicos = Array.isArray(parsed.servicos) && parsed.servicos.length > 0
+      ? parsed.servicos.map((s, i) => ({
+          id: i + 1,
+          fotoInicio: s?.fotoInicio ?? '',
+          fotoFim: s?.fotoFim ?? '',
+        }))
+      : Array.from({ length: 5 }, (_, i) => createEmptyServico(i + 1));
+
+    return {
+      cabecalho: { ...createDefaultCabecalho(), ...parsed.cabecalho },
+      servicos,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedState(state: PodaPersistedState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignora falhas de quota do navegador.
+  }
+}
+
+function clearPersistedState() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
 export const usePodaStore = defineStore('poda', () => {
+  const persisted = loadPersistedState();
+
+  const cabecalho = ref<PodaCabecalho>(persisted?.cabecalho ?? createDefaultCabecalho());
   const servicos = ref<PodaServico[]>(
-    Array.from({ length: 5 }, (_, i) => createEmptyServico(i + 1)),
+    persisted?.servicos ?? Array.from({ length: 5 }, (_, i) => createEmptyServico(i + 1)),
+  );
+
+  watch(
+    [cabecalho, servicos],
+    () => savePersistedState({ cabecalho: cabecalho.value, servicos: servicos.value }),
+    { deep: true },
   );
 
   function addServico() {
@@ -31,8 +99,10 @@ export const usePodaStore = defineStore('poda', () => {
   }
 
   function resetForm() {
+    cabecalho.value = createDefaultCabecalho();
     servicos.value = Array.from({ length: 5 }, (_, i) => createEmptyServico(i + 1));
+    clearPersistedState();
   }
 
-  return { servicos, addServico, removeServico, resetForm };
+  return { cabecalho, servicos, addServico, removeServico, resetForm };
 });

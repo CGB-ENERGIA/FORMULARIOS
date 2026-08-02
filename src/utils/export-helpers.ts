@@ -40,6 +40,11 @@ export function buildCusteioExportFileName(cabecalho: { componenteOuPg?: string;
   return `RELATORIO_CUSTEIO - ${ref}.${extension}`;
 }
 
+export function buildPodaExportFileName(cabecalho: { pep?: string }, extension: 'pdf' = 'pdf'): string {
+  const pep = sanitizePepForFileName(cabecalho.pep ?? '') || 'poda';
+  return `RELATORIO_PODA - ${pep}.${extension}`;
+}
+
 export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' | 'pdf' = 'xlsx'): string {
   const pep = sanitizePepForFileName(form.pep) || sanitizePepForFileName(form.nome) || 'cadastro';
   return `CADASTRO CONSUMIDORES - ${pep}.${extension}`;
