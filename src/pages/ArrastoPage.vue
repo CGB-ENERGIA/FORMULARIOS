@@ -93,10 +93,7 @@
                 :error-message="obraFieldError('distrital') ?? undefined"
               />
             </div>
-            <div class="col-12 col-md-4">
-              <q-input v-model="obra.reserva" label="Reserva" outlined dense hide-bottom-space />
-            </div>
-            <div class="col-12 col-md-8">
+            <div class="col-12">
               <q-input
                 v-model="obra.descricaoObra"
                 label="Descrição da Obra *"
