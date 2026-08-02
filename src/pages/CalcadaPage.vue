@@ -151,22 +151,72 @@
               <div class="foto-slot__label">
                 <q-icon name="history" size="14px" /> Antes
               </div>
-              <PhotoCell
-                :value="ev.fotoAntes"
-                :selected="isSelected(ev, 'antes')"
-                :drop-target="isDropTarget(ev, 'antes')"
-                :dragging="isDragging(ev, 'antes')"
-                @select="selectCell(ev, 'antes', $event)"
+
+              <div
+                v-if="ev.fotoAntes"
+                class="evidencia-zone evidencia-zone--filled relative-position"
+                :class="cellClass(ev, 'antes')"
+                tabindex="0"
+                title="Arraste a imagem para outro quadrado ou cole com Ctrl+V"
+                @click="selectCell(ev, 'antes', $event)"
                 @paste="handleZonePaste($event, ev, 'antes')"
-                @pick="triggerFoto(idx, 'antes')"
-                @clear="ev.fotoAntes = ''"
-                @dragstart="handleDragStart(ev, 'antes', $event)"
-                @dragend="handleDragEnd"
                 @dragover="handleDragOver(ev, 'antes', $event)"
                 @drop="handleDrop(ev, 'antes', $event)"
+              >
+                <img
+                  :src="ev.fotoAntes"
+                  draggable="true"
+                  class="evidencia-img evidencia-img--draggable"
+                  style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
+                  @dragstart="handleDragStart(ev, 'antes', $event)"
+                  @dragend="handleDragEnd"
+                />
+                <q-btn
+                  icon="close"
+                  round
+                  dense
+                  size="sm"
+                  color="negative"
+                  class="foto-slot__clear-btn absolute-top-right q-ma-xs"
+                  @click.stop="ev.fotoAntes = ''"
+                >
+                  <q-tooltip>Apagar foto</q-tooltip>
+                </q-btn>
+              </div>
+
+              <div
+                v-else
+                class="evidencia-zone evidencia-zone--empty flex flex-center column"
+                :class="cellClass(ev, 'antes')"
+                tabindex="0"
+                title="Selecione o quadrado, cole com Ctrl+V ou solte uma imagem arrastada"
+                @click="selectCell(ev, 'antes', $event)"
+                @paste="handleZonePaste($event, ev, 'antes')"
+                @keydown.enter="triggerFoto(idx, 'antes')"
+                @dragover="handleDragOver(ev, 'antes', $event)"
+                @drop="handleDrop(ev, 'antes', $event)"
+              >
+                <button
+                  type="button"
+                  class="evidencia-zone__upload-trigger"
+                  aria-label="Anexar imagem"
+                  @click.stop="triggerFoto(idx, 'antes')"
+                >
+                  <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
+                  <span class="text-grey-6 text-caption">Clique para anexar</span>
+                </button>
+                <span class="evidencia-zone__paste-hint text-grey-6 text-caption">
+                  ou selecione, cole (Ctrl+V) ou arraste
+                </span>
+              </div>
+
+              <input
+                :ref="(el) => setFotoRef(el, idx, 'antes')"
+                type="file"
+                accept="image/*"
+                style="display:none"
+                @change="(e) => handleFotoChange(e, ev, 'antes')"
               />
-              <input :ref="(el) => setFotoRef(el, idx, 'antes')" type="file" accept="image/*"
-                style="display:none" @change="(e) => handleFotoChange(e, ev, 'antes')" />
             </div>
 
             <div class="foto-slot__divider" />
@@ -176,22 +226,72 @@
               <div class="foto-slot__label">
                 <q-icon name="update" size="14px" /> Depois
               </div>
-              <PhotoCell
-                :value="ev.fotoDepois"
-                :selected="isSelected(ev, 'depois')"
-                :drop-target="isDropTarget(ev, 'depois')"
-                :dragging="isDragging(ev, 'depois')"
-                @select="selectCell(ev, 'depois', $event)"
+
+              <div
+                v-if="ev.fotoDepois"
+                class="evidencia-zone evidencia-zone--filled relative-position"
+                :class="cellClass(ev, 'depois')"
+                tabindex="0"
+                title="Arraste a imagem para outro quadrado ou cole com Ctrl+V"
+                @click="selectCell(ev, 'depois', $event)"
                 @paste="handleZonePaste($event, ev, 'depois')"
-                @pick="triggerFoto(idx, 'depois')"
-                @clear="ev.fotoDepois = ''"
-                @dragstart="handleDragStart(ev, 'depois', $event)"
-                @dragend="handleDragEnd"
                 @dragover="handleDragOver(ev, 'depois', $event)"
                 @drop="handleDrop(ev, 'depois', $event)"
+              >
+                <img
+                  :src="ev.fotoDepois"
+                  draggable="true"
+                  class="evidencia-img evidencia-img--draggable"
+                  style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
+                  @dragstart="handleDragStart(ev, 'depois', $event)"
+                  @dragend="handleDragEnd"
+                />
+                <q-btn
+                  icon="close"
+                  round
+                  dense
+                  size="sm"
+                  color="negative"
+                  class="foto-slot__clear-btn absolute-top-right q-ma-xs"
+                  @click.stop="ev.fotoDepois = ''"
+                >
+                  <q-tooltip>Apagar foto</q-tooltip>
+                </q-btn>
+              </div>
+
+              <div
+                v-else
+                class="evidencia-zone evidencia-zone--empty flex flex-center column"
+                :class="cellClass(ev, 'depois')"
+                tabindex="0"
+                title="Selecione o quadrado, cole com Ctrl+V ou solte uma imagem arrastada"
+                @click="selectCell(ev, 'depois', $event)"
+                @paste="handleZonePaste($event, ev, 'depois')"
+                @keydown.enter="triggerFoto(idx, 'depois')"
+                @dragover="handleDragOver(ev, 'depois', $event)"
+                @drop="handleDrop(ev, 'depois', $event)"
+              >
+                <button
+                  type="button"
+                  class="evidencia-zone__upload-trigger"
+                  aria-label="Anexar imagem"
+                  @click.stop="triggerFoto(idx, 'depois')"
+                >
+                  <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
+                  <span class="text-grey-6 text-caption">Clique para anexar</span>
+                </button>
+                <span class="evidencia-zone__paste-hint text-grey-6 text-caption">
+                  ou selecione, cole (Ctrl+V) ou arraste
+                </span>
+              </div>
+
+              <input
+                :ref="(el) => setFotoRef(el, idx, 'depois')"
+                type="file"
+                accept="image/*"
+                style="display:none"
+                @change="(e) => handleFotoChange(e, ev, 'depois')"
               />
-              <input :ref="(el) => setFotoRef(el, idx, 'depois')" type="file" accept="image/*"
-                style="display:none" @change="(e) => handleFotoChange(e, ev, 'depois')" />
             </div>
           </div>
         </div>
@@ -206,7 +306,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, h, resolveComponent, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
 import { useCalcadaStore, evidenciaPreenchida } from 'src/stores/calcada';
@@ -216,68 +316,6 @@ import { exportCalcadaToPdf } from 'src/utils/calcada-pdf';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
 import { setProtectedDefault } from 'src/utils/protected-defaults';
-
-// ── Componente inline de célula de foto (idêntico ao Desligamento) ───────────
-const PhotoCell = (props: {
-  value: string; selected: boolean; dropTarget: boolean; dragging: boolean;
-}, { emit }: { emit: (e: string, ...args: unknown[]) => void }) => {
-  const QBtn = resolveComponent('QBtn');
-  const QIcon = resolveComponent('QIcon');
-
-  const cls = [
-    'evidencia-zone',
-    props.value ? 'evidencia-zone--filled relative-position' : 'evidencia-zone--empty flex flex-center column',
-    {
-      'evidencia-zone--selected': props.selected,
-      'evidencia-zone--drop-target': props.dropTarget,
-      'evidencia-zone--dragging': props.dragging,
-    },
-  ];
-
-  const baseAttrs = {
-    class: cls,
-    tabindex: '0',
-    onClick: (e: Event) => emit('select', e),
-    onPaste: (e: Event) => emit('paste', e),
-    onDragover: (e: Event) => emit('dragover', e),
-    onDrop: (e: Event) => emit('drop', e),
-  };
-
-  if (props.value) {
-    return h('div', { ...baseAttrs, title: 'Arraste a imagem para outro quadrado ou cole com Ctrl+V' }, [
-      h('img', {
-        src: props.value,
-        draggable: 'true',
-        class: 'evidencia-img evidencia-img--draggable',
-        style: 'width:100%; max-height:260px; object-fit:contain; border-radius:8px;',
-        onDragstart: (e: Event) => emit('dragstart', e),
-        onDragend: () => emit('dragend'),
-      }),
-      h(QBtn, {
-        icon: 'close',
-        round: true,
-        dense: true,
-        size: 'sm',
-        color: 'negative',
-        class: 'absolute-top-right q-ma-xs',
-        onClick: (e: MouseEvent) => { e.stopPropagation(); emit('clear'); },
-      }),
-    ]);
-  }
-
-  return h('div', { ...baseAttrs, title: 'Selecione o quadrado, cole com Ctrl+V ou solte uma imagem arrastada' }, [
-    h('button', {
-      type: 'button',
-      class: 'evidencia-zone__upload-trigger',
-      'aria-label': 'Anexar imagem',
-      onClick: (e: MouseEvent) => { e.stopPropagation(); emit('pick'); },
-    }, [
-      h(QIcon, { name: 'add_photo_alternate', size: '40px', color: 'grey-5' }),
-      h('span', { class: 'text-grey-6 text-caption' }, 'Clique para anexar'),
-    ]),
-    h('span', { class: 'evidencia-zone__paste-hint text-grey-6 text-caption' }, 'ou selecione, cole (Ctrl+V) ou arraste'),
-  ]);
-};
 
 const $q = useQuasar();
 const store = useCalcadaStore();
@@ -316,9 +354,15 @@ const draggedKey = ref<CellKey | null>(null);
 const dropTargetKey = ref<CellKey | null>(null);
 
 function eq(a: CellKey | null, b: CellKey) { return !!a && a.id === b.id && a.tipo === b.tipo; }
-function isSelected(e: CalcadaEvidencia, t: Tipo) { return eq(selectedKey.value, { id: e.id, tipo: t }); }
-function isDropTarget(e: CalcadaEvidencia, t: Tipo) { return eq(dropTargetKey.value, { id: e.id, tipo: t }); }
-function isDragging(e: CalcadaEvidencia, t: Tipo) { return eq(draggedKey.value, { id: e.id, tipo: t }); }
+
+function cellClass(e: CalcadaEvidencia, t: Tipo) {
+  const k = { id: e.id, tipo: t };
+  return {
+    'evidencia-zone--selected': eq(selectedKey.value, k),
+    'evidencia-zone--drop-target': eq(dropTargetKey.value, k),
+    'evidencia-zone--dragging': eq(draggedKey.value, k),
+  };
+}
 
 function getPhoto(e: CalcadaEvidencia, t: Tipo) { return t === 'antes' ? e.fotoAntes : e.fotoDepois; }
 function setPhoto(e: CalcadaEvidencia, t: Tipo, v: string) {
@@ -613,6 +657,10 @@ function solicitarSenhaValorSap() {
 }
 
 :deep(.evidencia-zone--empty) { height: 260px; }
+
+.foto-slot__clear-btn {
+  z-index: 1;
+}
 
 .servicos-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
