@@ -48,7 +48,12 @@ export function formatBRL(value: number): string {
 export function validateCalcadaObra(obra: CalcadaObra): string[] {
   const errors: string[] = [];
   if (!obra.pep.trim()) errors.push('Informe o PEP da obra.');
+  if (!obra.nota.trim()) errors.push('Informe a nota.');
+  if (!obra.distrital.trim()) errors.push('Informe o distrital.');
   if (!obra.descricaoObra.trim()) errors.push('Informe a descrição da obra.');
+  if (!obra.municipio.trim()) errors.push('Informe o município.');
+  if (!calcularPi(obra.pep)) errors.push('PEP inválido — não foi possível calcular o PI.');
+  if (!calcularSetor(obra.pep)) errors.push('PEP inválido — não foi possível calcular o setor.');
   if (obra.quantidade == null || obra.quantidade <= 0) {
     errors.push('Informe a quantidade de reparos.');
   }

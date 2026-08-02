@@ -35,33 +35,38 @@
                 :error="validacaoAtiva && !obra.pep.trim()" error-message="Informe o PEP" />
             </div>
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.nota" label="Nota" outlined dense hide-bottom-space />
+              <q-input v-model="obra.nota" label="Nota *" outlined dense hide-bottom-space
+                :error="validacaoAtiva && !obra.nota.trim()" error-message="Informe a nota" />
             </div>
             <div class="col-12 col-md-4">
-              <q-select v-model="obra.distrital" :options="distritalOptions" label="Distrital"
-                outlined dense emit-value map-options hide-bottom-space clearable />
+              <q-select v-model="obra.distrital" :options="distritalOptions" label="Distrital *"
+                outlined dense emit-value map-options hide-bottom-space
+                :error="validacaoAtiva && !obra.distrital" error-message="Informe o distrital" />
             </div>
             <div class="col-12 col-md-8">
               <q-input v-model="obra.descricaoObra" label="Descrição da Obra *" outlined dense hide-bottom-space
                 :error="validacaoAtiva && !obra.descricaoObra.trim()" error-message="Informe a descrição" />
             </div>
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.municipio" label="Município" outlined dense hide-bottom-space />
+              <q-input v-model="obra.municipio" label="Município *" outlined dense hide-bottom-space
+                :error="validacaoAtiva && !obra.municipio.trim()" error-message="Informe o município" />
             </div>
           </div>
 
           <!-- Campos calculados -->
           <div class="row q-col-gutter-md q-mt-xs items-center">
             <div class="col-6 col-md-2">
-              <div class="calc-field">
-                <span class="calc-field__label">PI</span>
+              <div class="calc-field" :class="{ 'calc-field--error': validacaoAtiva && !pi }">
+                <span class="calc-field__label">PI *</span>
                 <span class="calc-field__value">{{ pi || '—' }}</span>
+                <span v-if="validacaoAtiva && !pi" class="calc-field__error">PEP inválido</span>
               </div>
             </div>
             <div class="col-6 col-md-2">
-              <div class="calc-field">
-                <span class="calc-field__label">Setor</span>
+              <div class="calc-field" :class="{ 'calc-field--error': validacaoAtiva && !setor }">
+                <span class="calc-field__label">Setor *</span>
                 <span class="calc-field__value">{{ setor || '—' }}</span>
+                <span v-if="validacaoAtiva && !setor" class="calc-field__error">PEP inválido</span>
               </div>
             </div>
           </div>
@@ -647,6 +652,17 @@ function solicitarSenhaValorSap() {
   border-style: solid;
   border-color: var(--q-primary);
   background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.06);
+}
+
+.calc-field--error {
+  border-color: var(--q-negative) !important;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.calc-field__error {
+  font-size: 10px;
+  color: var(--q-negative);
+  font-weight: 600;
 }
 
 .calc-field__label {
