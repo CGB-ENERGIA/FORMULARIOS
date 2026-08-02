@@ -42,7 +42,7 @@ export function buildCusteioExportFileName(cabecalho: { componenteOuPg?: string;
 
 export function buildPodaExportFileName(cabecalho: { pep?: string }, extension: 'pdf' = 'pdf'): string {
   const pep = sanitizePepForFileName(cabecalho.pep ?? '') || 'poda';
-  return `RELATORIO_PODA - ${pep}.${extension}`;
+  return `RELATÓRIO DE PODAS - ${pep}.${extension}`;
 }
 
 export function buildCadastroExportFileName(form: CadastroForm, extension: 'xlsx' | 'pdf' = 'xlsx'): string {
