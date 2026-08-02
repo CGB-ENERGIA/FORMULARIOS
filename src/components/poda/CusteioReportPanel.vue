@@ -26,36 +26,54 @@
             <q-select
               v-model="cabecalho.base"
               :options="baseOptions"
-              label="Base"
+              label="Base *"
               outlined
               dense
               emit-value
               map-options
               hide-bottom-space
-              clearable
+              :error="validacaoAtiva && !cabecalho.base"
+              error-message="Informe a base"
             />
           </div>
           <div class="col-12 col-md-3">
             <q-select
               v-model="cabecalho.municipio"
               :options="municipioOptionsFiltered"
-              label="Município"
+              label="Município *"
               outlined
               dense
               hide-bottom-space
-              clearable
               use-input
               fill-input
               hide-selected
               input-debounce="0"
+              :error="validacaoAtiva && !cabecalho.municipio.trim()"
+              error-message="Informe o município"
               @filter="filterMunicipios"
             />
           </div>
           <div class="col-12 col-md-3">
-            <q-input v-model="cabecalho.ordemIncidente" label="Ordem / Incidente" outlined dense hide-bottom-space />
+            <q-input
+              v-model="cabecalho.ordemIncidente"
+              label="Ordem / Incidente *"
+              outlined
+              dense
+              hide-bottom-space
+              :error="validacaoAtiva && !cabecalho.ordemIncidente.trim()"
+              error-message="Informe a ordem / incidente"
+            />
           </div>
           <div class="col-12 col-md-3">
-            <q-input v-model="cabecalho.componenteOuPg" label="Componente ou PG" outlined dense hide-bottom-space />
+            <q-input
+              v-model="cabecalho.componenteOuPg"
+              label="Componente ou PG *"
+              outlined
+              dense
+              hide-bottom-space
+              :error="validacaoAtiva && !cabecalho.componenteOuPg.trim()"
+              error-message="Informe o componente ou PG"
+            />
           </div>
           <div class="col-12">
             <q-input
