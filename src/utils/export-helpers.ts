@@ -31,7 +31,7 @@ export function buildArrastoExportFileName(obra: ArrastoObra, extension: 'xlsm' 
 }
 
 export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' | 'pdf'): string {
-  const pep = sanitizeFileNamePart(obra.pep) || 'calcada';
+  const pep = sanitizePepForFileName(obra.pep) || 'calcada';
   return `ANEXO REPARO DE CALÇADA - ${pep}.${extension}`;
 }
 
