@@ -268,6 +268,7 @@ import { storeToRefs } from 'pinia';
 import { useCusteioStore, servicoPreenchido } from 'src/stores/custeio';
 import type { CusteioServico } from 'src/stores/custeio';
 import { exportCusteioToPdf } from 'src/utils/custeio-pdf';
+import { validateCusteioCabecalho } from 'src/utils/custeio-helpers';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
 import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
@@ -484,6 +485,18 @@ function handleDrop(s: CusteioServico, tipo: Tipo, event: DragEvent) {
 
 function ensureExportavel(): boolean {
   validacaoAtiva.value = true;
+
+  const cabecalhoErrors = validateCusteioCabecalho(cabecalho.value);
+  if (cabecalhoErrors.length > 0) {
+    $q.notify({
+      type: 'negative',
+      icon: 'warning',
+      message: cabecalhoErrors[0],
+      timeout: 5000,
+    });
+    return false;
+  }
+
   if (preenchidosCount.value === 0) {
     $q.notify({
       type: 'negative',
