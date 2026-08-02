@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { CalcadaObra, CalcadaEvidencia } from '../stores/calcada';
-import { evidenciaPreenchida } from '../stores/calcada';
+import { quantidadeEvidenciasRequeridas, validateCalcadaEvidencias } from './calcada-helpers';
 import { calcularValorRs, formatBRL } from './calcada-helpers';
 import { buildCalcadaExportFileName } from './export-helpers';
 import { savePdfWithWatermark } from './pdf-watermark';
@@ -182,15 +182,17 @@ export async function exportCalcadaToPdf(
   obra: CalcadaObra,
   evidencias: CalcadaEvidencia[],
 ): Promise<string> {
-  const preenchidas = evidencias.filter(evidenciaPreenchida);
-  if (preenchidas.length === 0) {
-    throw new Error('Adicione ao menos uma evidência antes de exportar.');
+  const errors = validateCalcadaEvidencias(obra, evidencias);
+  if (errors.length > 0) {
+    throw new Error(errors[0]);
   }
+
+  const required = evidencias.slice(0, quantidadeEvidenciasRequeridas(obra.quantidade));
 
   const logo = await loadLogoBase64();
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' }) as DocPt;
 
-  for (let i = 0; i < preenchidas.length; i++) {
+  for (let i = 0; i < required.length; i++) {
     const slot = i % BLOCKS_PER_PAGE;
     if (i > 0 && slot === 0) {
       doc.addPage();
@@ -198,7 +200,7 @@ export async function exportCalcadaToPdf(
     if (slot === 0) {
       drawHeader(doc, logo, obra, true);
     }
-    drawBlock(doc, preenchidas[i]!, slot, FIRST_PG_TOP_CALCADA);
+    drawBlock(doc, required[i]!, slot, FIRST_PG_TOP_CALCADA);
   }
 
   const fileName = buildCalcadaExportFileName(obra, 'pdf');

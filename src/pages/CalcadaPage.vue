@@ -79,8 +79,11 @@
         <q-card-section class="premium-card__body">
           <div class="row q-col-gutter-md items-center">
             <div class="col-12 col-md-4">
-              <q-input v-model.number="obra.quantidade" type="number" min="0" step="0.01"
-                label="Quantidade" outlined dense hide-bottom-space />
+              <q-input v-model.number="obra.quantidade" type="number" min="1" step="1"
+                label="Quantidade *" outlined dense hide-bottom-space
+                hint="Define quantas evidências (PG + fotos Antes/Depois) são obrigatórias"
+                :error="validacaoAtiva && (obra.quantidade == null || obra.quantidade <= 0)"
+                error-message="Informe a quantidade de reparos" />
             </div>
             <div class="col-12 col-md-4">
               <q-input v-model.number="obra.valorSap" type="number" min="0" step="0.01"
@@ -119,7 +122,10 @@
       <div class="action-bar q-mb-md">
         <div class="stat-chip">
           <q-icon name="check_circle" size="18px" color="primary" />
-          <strong>{{ preenchidasCount }}</strong> evidência(s) preenchida(s)
+          <strong>{{ completasCount }}</strong> de <strong>{{ evidenciasRequeridas }}</strong> evidência(s) completa(s)
+        </div>
+        <div class="text-caption text-grey-7 q-ml-sm">
+          Cada evidência exige PG, foto Antes e foto Depois.
         </div>
       </div>
 
@@ -128,19 +134,41 @@
           v-for="(ev, idx) in evidencias"
           :key="ev.id"
           class="servico-card"
-          :class="{ 'servico-card--ok': evidenciaPreenchida(ev) }"
+          :class="{
+            'servico-card--ok': evidenciaCompleta(ev),
+            'servico-card--invalid': evidenciaInvalida(ev, idx),
+          }"
         >
           <div class="servico-card__header">
             <div class="servico-card__header-left">
               <span class="servico-card__badge">{{ ev.id }}</span>
               <span class="servico-card__title">Evidência {{ ev.id }}</span>
-              <q-icon v-if="evidenciaPreenchida(ev)" name="check_circle" size="16px" color="positive" class="q-ml-xs" />
+              <q-icon v-if="evidenciaCompleta(ev)" name="check_circle" size="16px" color="positive" class="q-ml-xs" />
             </div>
             <div class="row items-center q-gutter-sm">
-              <q-input v-model="ev.pg" label="PG" dense outlined hide-bottom-space class="pg-input" />
-              <q-btn flat round dense icon="delete_outline" color="negative" size="sm"
-                :disable="evidencias.length <= 1" @click="removeEvidencia(idx)">
-                <q-tooltip>Remover evidência</q-tooltip>
+              <q-input
+                v-model="ev.pg"
+                label="PG *"
+                dense
+                outlined
+                hide-bottom-space
+                class="pg-input"
+                :error="evidenciaInvalida(ev, idx) && !ev.pg.trim()"
+                error-message="Obrigatório"
+              />
+              <q-btn
+                flat
+                round
+                dense
+                icon="delete_outline"
+                color="negative"
+                size="sm"
+                :disable="!podeRemoverEvidencia(idx)"
+                @click="removeEvidencia(idx)"
+              >
+                <q-tooltip>
+                  {{ podeRemoverEvidencia(idx) ? 'Remover evidência' : 'Quantidade exige esta evidência' }}
+                </q-tooltip>
               </q-btn>
             </div>
           </div>
@@ -296,10 +324,6 @@
           </div>
         </div>
 
-        <button class="servicos-add-btn" @click="addEvidencia">
-          <q-icon name="add_circle_outline" size="20px" />
-          Adicionar evidência
-        </button>
       </div>
     </div>
   </q-page>
@@ -309,9 +333,9 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
-import { useCalcadaStore, evidenciaPreenchida } from 'src/stores/calcada';
+import { useCalcadaStore } from 'src/stores/calcada';
 import type { CalcadaEvidencia } from 'src/stores/calcada';
-import { calcularPi, calcularSetor, calcularValorRs, formatBRL } from 'src/utils/calcada-helpers';
+import { calcularPi, calcularSetor, calcularValorRs, formatBRL, evidenciaCompleta, quantidadeEvidenciasRequeridas, validateCalcadaEvidencias, validateCalcadaObra } from 'src/utils/calcada-helpers';
 import { exportCalcadaToPdf } from 'src/utils/calcada-pdf';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
@@ -320,7 +344,7 @@ import { setProtectedDefault } from 'src/utils/protected-defaults';
 const $q = useQuasar();
 const store = useCalcadaStore();
 const { obra, evidencias } = storeToRefs(store);
-const { addEvidencia, removeEvidencia, resetForm } = store;
+const { removeEvidencia, resetForm, syncEvidenciasComQuantidade } = store;
 
 const validacaoAtiva = ref(false);
 const valorSapLiberado = ref(false);
@@ -335,6 +359,13 @@ watch(
   },
 );
 
+watch(
+  () => obra.value.quantidade,
+  () => {
+    syncEvidenciasComQuantidade();
+  },
+);
+
 const distritalOptions = (distritaisData as string[]).map((value) => ({
   label: formatDistritalLabel(value),
   value,
@@ -343,7 +374,21 @@ const distritalOptions = (distritaisData as string[]).map((value) => ({
 const pi = computed(() => calcularPi(obra.value.pep));
 const setor = computed(() => calcularSetor(obra.value.pep));
 const valorRsFmt = computed(() => formatBRL(calcularValorRs(obra.value.quantidade, obra.value.valorSap)));
-const preenchidasCount = computed(() => evidencias.value.filter(evidenciaPreenchida).length);
+const evidenciasRequeridas = computed(() => quantidadeEvidenciasRequeridas(obra.value.quantidade));
+const completasCount = computed(() => evidencias.value.filter(evidenciaCompleta).length);
+
+function evidenciaObrigatoria(idx: number) {
+  return idx < evidenciasRequeridas.value;
+}
+
+function evidenciaInvalida(ev: CalcadaEvidencia, idx: number) {
+  return validacaoAtiva.value && evidenciaObrigatoria(idx) && !evidenciaCompleta(ev);
+}
+
+function podeRemoverEvidencia(idx: number) {
+  if (evidencias.value.length <= evidenciasRequeridas.value) return false;
+  return idx >= evidenciasRequeridas.value;
+}
 
 // ── Chave de célula ───────────────────────────────────────────────────────────
 type Tipo = 'antes' | 'depois';
@@ -453,7 +498,10 @@ async function handleGlobalPaste(event: ClipboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('paste', handleGlobalPaste));
+onMounted(() => {
+  document.addEventListener('paste', handleGlobalPaste);
+  syncEvidenciasComQuantidade();
+});
 onUnmounted(() => document.removeEventListener('paste', handleGlobalPaste));
 
 // ── Drag & drop ───────────────────────────────────────────────────────────────
@@ -499,14 +547,20 @@ function handleDrop(e: CalcadaEvidencia, t: Tipo, event: Event) {
 // ── Validação e exportação ────────────────────────────────────────────────────
 function ensureExportavel(): boolean {
   validacaoAtiva.value = true;
-  if (!obra.value.pep.trim() || !obra.value.descricaoObra.trim()) {
-    $q.notify({ type: 'negative', icon: 'warning', message: 'Preencha o PEP e a descrição da obra.' });
+  syncEvidenciasComQuantidade();
+
+  const obraErrors = validateCalcadaObra(obra.value);
+  if (obraErrors.length > 0) {
+    $q.notify({ type: 'negative', icon: 'warning', message: obraErrors[0] });
     return false;
   }
-  if (preenchidasCount.value === 0) {
-    $q.notify({ type: 'negative', icon: 'photo_camera', message: 'Adicione pelo menos 1 evidência com foto.' });
+
+  const evidenciaErrors = validateCalcadaEvidencias(obra.value, evidencias.value);
+  if (evidenciaErrors.length > 0) {
+    $q.notify({ type: 'negative', icon: 'photo_camera', message: evidenciaErrors[0] });
     return false;
   }
+
   return true;
 }
 
@@ -621,6 +675,7 @@ function solicitarSenhaValorSap() {
 
 .body--dark .servico-card { border-color: rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); }
 .servico-card--ok { border-color: rgba(76, 175, 80, 0.35); }
+.servico-card--invalid { border-color: rgba(239, 68, 68, 0.45); }
 
 .servico-card__header {
   display: flex; align-items: center; justify-content: space-between;

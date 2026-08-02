@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { getProtectedDefault } from '../utils/protected-defaults';
+import { quantidadeEvidenciasRequeridas } from '../utils/calcada-helpers';
 
 export interface CalcadaObra {
   pep: string;
@@ -63,7 +64,7 @@ function loadPersistedState(): CalcadaPersistedState | null {
           fotoAntes: e?.fotoAntes ?? '',
           fotoDepois: e?.fotoDepois ?? '',
         }))
-      : Array.from({ length: 3 }, (_, i) => createEmptyEvidencia(i + 1));
+      : Array.from({ length: 1 }, (_, i) => createEmptyEvidencia(i + 1));
 
     return {
       obra: { ...createDefaultObra(), ...parsed.obra },
@@ -91,7 +92,7 @@ export const useCalcadaStore = defineStore('calcada', () => {
 
   const obra = ref<CalcadaObra>(persisted?.obra ?? createDefaultObra());
   const evidencias = ref<CalcadaEvidencia[]>(
-    persisted?.evidencias ?? Array.from({ length: 3 }, (_, i) => createEmptyEvidencia(i + 1)),
+    persisted?.evidencias ?? Array.from({ length: 1 }, (_, i) => createEmptyEvidencia(i + 1)),
   );
 
   watch(
@@ -105,16 +106,35 @@ export const useCalcadaStore = defineStore('calcada', () => {
   }
 
   function removeEvidencia(index: number) {
-    if (evidencias.value.length <= 1) return;
+    const minimo = quantidadeEvidenciasRequeridas(obra.value.quantidade);
+    if (evidencias.value.length <= minimo) return;
     evidencias.value.splice(index, 1);
     evidencias.value.forEach((e, i) => { e.id = i + 1; });
   }
 
+  function syncEvidenciasComQuantidade() {
+    const required = quantidadeEvidenciasRequeridas(obra.value.quantidade);
+
+    while (evidencias.value.length < required) {
+      addEvidencia();
+    }
+
+    while (evidencias.value.length > required) {
+      const last = evidencias.value[evidencias.value.length - 1];
+      if (last && !evidenciaPreenchida(last)) {
+        evidencias.value.pop();
+        evidencias.value.forEach((e, i) => { e.id = i + 1; });
+      } else {
+        break;
+      }
+    }
+  }
+
   function resetForm() {
     obra.value = createDefaultObra();
-    evidencias.value = Array.from({ length: 3 }, (_, i) => createEmptyEvidencia(i + 1));
+    evidencias.value = Array.from({ length: 1 }, (_, i) => createEmptyEvidencia(i + 1));
     clearPersistedState();
   }
 
-  return { obra, evidencias, addEvidencia, removeEvidencia, resetForm };
+  return { obra, evidencias, addEvidencia, removeEvidencia, syncEvidenciasComQuantidade, resetForm };
 });
