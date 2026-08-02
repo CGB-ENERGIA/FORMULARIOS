@@ -26,8 +26,8 @@ export function buildDesligamentoExportFileName(
 }
 
 export function buildArrastoExportFileName(obra: ArrastoObra, extension: 'xlsm' | 'pdf' = 'xlsm'): string {
-  const pep = sanitizeFileNamePart(obra.pep) || 'arrasto';
-  return `MEMÓRIA DE CÁLCULO ARRASTO - ${pep}.${extension}`;
+  const pep = sanitizePepForFileName(obra.pep) || 'arrasto';
+  return `MEMÓRIA DE CÁLCULO ARRASTO DE MATERIAIS - ${pep}.${extension}`;
 }
 
 export function buildCalcadaExportFileName(obra: CalcadaObra, extension: 'xlsx' | 'pdf'): string {
