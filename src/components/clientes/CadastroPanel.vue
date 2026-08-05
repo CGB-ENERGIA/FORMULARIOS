@@ -22,6 +22,15 @@
           />
           <q-btn outline color="negative" icon="restart_alt" label="LIMPAR" no-caps @click="handleReset" />
           <q-btn
+            outline
+            color="positive"
+            icon="table_view"
+            label="Cadastro (Excel)"
+            no-caps
+            :disable="possuiTransformador === null"
+            @click="handleExportCadastroExcel"
+          />
+          <q-btn
             unelevated
             icon="download"
             label="Exportar"
@@ -343,7 +352,7 @@ import {
   getCadastroSolicitacaoPdfErrors,
   PADRAO_OPTIONS,
 } from 'src/utils/cadastro-helpers';
-import { exportClientesPadrao } from 'src/utils/clientes-export';
+import { exportClientesPadrao, exportSomenteCadastroExcel } from 'src/utils/clientes-export';
 import { sanitizeDigits, validateConsumidoresParaExportacao } from 'src/utils/consumidor-helpers';
 import { validateObraParaExportacao } from 'src/utils/obra-helpers';
 import { salvarRegistroClientes } from 'src/services/registros/save-clientes';
@@ -402,6 +411,34 @@ function handleReset() {
     validacaoAtiva.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });
+}
+
+async function handleExportCadastroExcel() {
+  validacaoAtiva.value = true;
+
+  const errors = getCadastroSolicitacaoPdfErrors(clientes.value, possuiTransformador.value);
+
+  if (errors.length > 0) {
+    $q.notify({
+      type: 'negative',
+      message: 'Não foi possível exportar. Corrija os campos:',
+      caption: errors.slice(0, 4).join(' · '),
+      multiLine: true,
+      timeout: 8000,
+    });
+    return;
+  }
+
+  const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Cadastro (Excel)…', timeout: 0 });
+
+  try {
+    const { cadastroFileName } = await exportSomenteCadastroExcel(clientes.value);
+    dismiss();
+    $q.notify({ type: 'positive', message: 'Excel gerado com sucesso.', caption: cadastroFileName, timeout: 6000 });
+  } catch (error) {
+    dismiss();
+    $q.notify({ type: 'negative', message: error instanceof Error ? error.message : 'Erro ao exportar.' });
+  }
 }
 
 async function handleExport() {

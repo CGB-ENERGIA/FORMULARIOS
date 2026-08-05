@@ -35,3 +35,20 @@ export async function exportClientesPadrao(
     excelBlob: excel.blob,
   };
 }
+
+export async function exportSomenteConsumidoresPdf(
+  obra: ObraInfo,
+  consumidores: Consumidor[],
+): Promise<Pick<ClientesExportResult, 'consumidoresFileName' | 'pdfBlob'>> {
+  const pdf = await buildConsumidoresPdfBlob(obra, consumidores);
+  downloadBlob(pdf.blob, pdf.fileName);
+  return { consumidoresFileName: pdf.fileName, pdfBlob: pdf.blob };
+}
+
+export async function exportSomenteCadastroExcel(
+  clientes: CadastroForm[],
+): Promise<Pick<ClientesExportResult, 'cadastroFileName' | 'excelBlob'>> {
+  const excel = await buildCadastroExcelBlob(clientes);
+  downloadBlob(excel.blob, excel.fileName);
+  return { cadastroFileName: excel.fileName, excelBlob: excel.blob };
+}

@@ -191,6 +191,14 @@
             @click="addConsumidor"
           />
           <q-btn
+            outline
+            color="primary"
+            icon="picture_as_pdf"
+            label="Consumidores (PDF)"
+            no-caps
+            @click="handleExportConsumidoresPdf"
+          />
+          <q-btn
             unelevated
             color="primary"
             icon="arrow_forward"
@@ -462,6 +470,7 @@ import {
 import { getObraFieldError, isObraCompleta, validateObraParaExportacao } from 'src/utils/obra-helpers';
 import type { DistritalCode } from 'src/utils/historico-file';
 import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
+import { exportSomenteConsumidoresPdf } from 'src/utils/clientes-export';
 
 type FotoTipo = 'padrao' | 'medidor';
 
@@ -695,6 +704,28 @@ function handleContinuar() {
     cadastroStore.setPossuiTransformador(value === 'sim');
     void router.push({ path: '/clientes', query: { tab: 'cadastro' } });
   });
+}
+
+async function handleExportConsumidoresPdf() {
+  obraValidacaoAtiva.value = true;
+  const errors = [
+    ...validateObraParaExportacao(obra.value),
+    ...validateConsumidoresParaExportacao(consumidores.value),
+  ];
+  if (errors.length > 0) {
+    notifyExportValidationErrors(errors);
+    return;
+  }
+
+  const dismiss = $q.notify({ type: 'ongoing', message: 'Gerando Consumidores (PDF)…', timeout: 0 });
+  try {
+    const { consumidoresFileName } = await exportSomenteConsumidoresPdf(obra.value, consumidores.value);
+    dismiss();
+    $q.notify({ type: 'positive', message: 'PDF gerado com sucesso.', caption: consumidoresFileName, timeout: 6000 });
+  } catch (error) {
+    dismiss();
+    $q.notify({ type: 'negative', message: error instanceof Error ? error.message : 'Erro ao exportar.' });
+  }
 }
 
 function handleReset() {
