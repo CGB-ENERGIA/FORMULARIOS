@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 
 export interface PodaCabecalho {
   pep: string;
+  nota: string;
   base: string;
   cidade: string;
   descricaoObra: string;
@@ -24,6 +25,7 @@ interface PodaPersistedState {
 function createDefaultCabecalho(): PodaCabecalho {
   return {
     pep: '',
+    nota: '',
     base: '',
     cidade: '',
     descricaoObra: '',

@@ -17,12 +17,12 @@
       <div class="premium-card__header">
         <div class="premium-card__header-title">
           <div class="premium-card__header-icon"><q-icon name="description" size="22px" /></div>
-          Relatório de Evidências dos Serviços Executados
+          Relatório de Evidências de Poda
         </div>
       </div>
       <q-card-section class="premium-card__body">
         <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-2">
             <q-input
               v-model="cabecalho.pep"
               label="PEP *"
@@ -33,7 +33,10 @@
               error-message="Informe o PEP"
             />
           </div>
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-2">
+            <q-input v-model="cabecalho.nota" label="Nota" outlined dense hide-bottom-space />
+          </div>
+          <div class="col-12 col-md-2">
             <q-select
               v-model="cabecalho.base"
               :options="baseOptions"
@@ -43,11 +46,12 @@
               emit-value
               map-options
               hide-bottom-space
+              clearable
               :error="validacaoAtiva && !cabecalho.base"
               error-message="Informe a base"
             />
           </div>
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-2">
             <q-select
               v-model="cabecalho.cidade"
               :options="municipioOptionsFiltered"
@@ -55,6 +59,7 @@
               outlined
               dense
               hide-bottom-space
+              clearable
               use-input
               fill-input
               hide-selected
@@ -64,7 +69,7 @@
               @filter="filterMunicipios"
             />
           </div>
-          <div class="col-12">
+          <div class="col-12 col-md-4">
             <q-input
               v-model="cabecalho.descricaoObra"
               label="Descrição da Obra *"
@@ -281,7 +286,7 @@ function normalizeSearch(value: string): string {
   return value
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[̀-ͯ]/g, '');
 }
 
 function filterMunicipios(

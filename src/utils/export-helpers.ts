@@ -21,8 +21,8 @@ export function buildDesligamentoExportFileName(
   obra: DesligamentoObra,
   extension: 'xlsx' | 'pdf',
 ): string {
-  const pep = sanitizeFileNamePart(obra.pep) || 'desligamento';
-  return `AVISO DE DESLIGAMENTO - ${pep}.${extension}`;
+  const pep = sanitizePepForFileName(obra.pep) || 'desligamento';
+  return `FORMULÁRIO AVISO DE DESLIGAMENTO - ${pep}.${extension}`;
 }
 
 export function buildArrastoExportFileName(obra: ArrastoObra, extension: 'xlsm' | 'pdf' = 'xlsm'): string {

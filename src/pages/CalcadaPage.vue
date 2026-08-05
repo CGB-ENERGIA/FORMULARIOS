@@ -48,8 +48,22 @@
                 :error="validacaoAtiva && !obra.descricaoObra.trim()" error-message="Informe a descrição" />
             </div>
             <div class="col-12 col-md-4">
-              <q-input v-model="obra.municipio" label="MUNICIPIO *" outlined dense hide-bottom-space
-                :error="validacaoAtiva && !obra.municipio.trim()" error-message="Informe o município" />
+              <q-select
+                v-model="obra.municipio"
+                :options="municipioOptionsFiltered"
+                label="Cidade *"
+                outlined
+                dense
+                hide-bottom-space
+                clearable
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="0"
+                :error="validacaoAtiva && !obra.municipio.trim()"
+                error-message="Informe o município"
+                @filter="filterMunicipios"
+              />
             </div>
           </div>
 
@@ -344,6 +358,7 @@ import { calcularPi, calcularSetor, calcularValorRs, formatBRL, evidenciaComplet
 import { exportCalcadaToPdf } from 'src/utils/calcada-pdf';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
+import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
 import { setProtectedDefault } from 'src/utils/protected-defaults';
 
 const $q = useQuasar();
@@ -353,6 +368,22 @@ const { removeEvidencia, resetForm, syncEvidenciasComQuantidade } = store;
 
 const validacaoAtiva = ref(false);
 const valorSapLiberado = ref(false);
+
+const municipioOptions = municipiosMaranhaoData as string[];
+const municipioOptionsFiltered = ref(municipioOptions);
+
+function normalizeMunicipioSearch(value: string): string {
+  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function filterMunicipios(val: string, update: (callback: () => void) => void) {
+  update(() => {
+    const needle = normalizeMunicipioSearch(val);
+    municipioOptionsFiltered.value = needle === ''
+      ? municipioOptions
+      : municipioOptions.filter((m) => normalizeMunicipioSearch(m).includes(needle));
+  });
+}
 
 const VALOR_SAP_SENHA = 'CGB123';
 

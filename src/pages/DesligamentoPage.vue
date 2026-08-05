@@ -187,7 +187,7 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="solicitacao.numeroOperacional"
-                label="Nº Operacional *"
+                label="Nº Componente *"
                 outlined
                 dense
                 hide-bottom-space

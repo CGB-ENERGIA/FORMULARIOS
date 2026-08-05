@@ -33,7 +33,7 @@ const SI_REQUIRED_FIELDS = [
 const SI_FIELD_LABELS: Record<(typeof SI_REQUIRED_FIELDS)[number], string> = {
   inicioDesligamento: 'Início Desligamento',
   fimDesligamento: 'Fim Desligamento',
-  numeroOperacional: 'Nº Operacional',
+  numeroOperacional: 'Nº Componente',
   numeroBarramento: 'Nº Barramento',
 };
 

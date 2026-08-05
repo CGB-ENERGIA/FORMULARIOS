@@ -53,29 +53,27 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: PodaCabecalho, y: num
   doc.text('RELATÓRIO DE EVIDÊNCIAS DOS SERVIÇOS EXECUTADOS', PAGE_W / 2, y + 5.5, { align: 'center' });
   y += 10;
 
+  // Dados da OS — linha 1: PEP | NOTA | BASE | CIDADE
+  const colW = CONT_W / 4;
   autoTable(doc, {
     startY: y,
     margin: { left: MX, right: MX },
     tableWidth: CONT_W,
     theme: 'grid',
     styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
+    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     columnStyles: {
-      0: { cellWidth: CONT_W / 3 },
-      1: { cellWidth: CONT_W / 3 },
-      2: { cellWidth: CONT_W / 3 },
+      0: { cellWidth: colW },
+      1: { cellWidth: colW },
+      2: { cellWidth: colW },
+      3: { cellWidth: colW },
     },
-    head: [['PEP', 'BASE', 'CIDADE']],
+    head: [['PEP', 'NOTA', 'BASE', 'CIDADE']],
     body: [[
-      cabecalho.pep,
-      formatDistritalLabel(cabecalho.base),
-      cabecalho.cidade,
+      cabecalho.pep || '—',
+      cabecalho.nota || '—',
+      formatDistritalLabel(cabecalho.base) || '—',
+      cabecalho.cidade || '—',
     ]],
   });
 
@@ -87,15 +85,9 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: PodaCabecalho, y: num
     tableWidth: CONT_W,
     theme: 'grid',
     styles: { fontSize: 6.5, cellPadding: 2, valign: 'top', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
+    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     head: [['DESCRIÇÃO DA OBRA']],
-    body: [[cabecalho.descricaoObra]],
+    body: [[cabecalho.descricaoObra || '—']],
   });
 
   y = (doc.lastAutoTable?.finalY ?? y + 12) + 3;
@@ -106,13 +98,7 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: PodaCabecalho, y: num
     tableWidth: CONT_W,
     theme: 'grid',
     styles: { fontSize: 6.5, cellPadding: 2, valign: 'top', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
+    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     columnStyles: {
       0: { cellWidth: CONT_W / 2 },
       1: { cellWidth: CONT_W / 2 },
@@ -231,8 +217,6 @@ export async function exportPodaToPdf(
     y = drawEvidencia(doc, s, reg, reg + 1, y);
     reg += 2;
   }
-
-  // Rodapé e marca d'água aplicados em savePdfWithWatermark.
 
   const fileName = buildPodaExportFileName(cabecalho, 'pdf');
   return savePdfWithWatermark(doc, fileName);
