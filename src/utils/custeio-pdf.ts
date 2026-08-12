@@ -49,19 +49,14 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
   doc.text('RELATÓRIO DE EVIDÊNCIAS DOS SERVIÇOS EXECUTADOS', PAGE_W / 2, y + 5.5, { align: 'center' });
   y += 10;
 
+  // Linha 1: BASE | MUNICÍPIO | ORDEM/INCIDENTE | COMPONENTE OU PG
   autoTable(doc, {
     startY: y,
     margin: { left: MX, right: MX },
     tableWidth: CONT_W,
     theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
+    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', halign: 'center', lineColor: GRAY, lineWidth: 0.2 },
+    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     columnStyles: {
       0: { cellWidth: CONT_W * 0.25 },
       1: { cellWidth: CONT_W * 0.25 },
@@ -81,47 +76,28 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
 
   y = (doc.lastAutoTable?.finalY ?? y + 8) + 0.5;
 
+  // Linha 2: PREFIXO DA EQUIPE | DATA DE EXECUÇÃO | OBSERVAÇÃO
   autoTable(doc, {
     startY: y,
     margin: { left: MX, right: MX },
     tableWidth: CONT_W,
     theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
+    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', halign: 'center', lineColor: GRAY, lineWidth: 0.2 },
+    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     columnStyles: {
-      0: { cellWidth: CONT_W * 0.5 },
-      1: { cellWidth: CONT_W * 0.5 },
+      0: { cellWidth: CONT_W * 0.35 },
+      1: { cellWidth: CONT_W * 0.15 },
+      2: { cellWidth: CONT_W * 0.50 },
     },
-    head: [['PREFIXO DA EQUIPE', 'DATA DE EXECUÇÃO']],
-    body: [[cabecalho.prefixoEquipe || '—', cabecalho.dataExecucao || '—']],
+    head: [['PREFIXO DA EQUIPE', 'DATA DE EXECUÇÃO', 'OBSERVAÇÃO']],
+    body: [[
+      cabecalho.prefixoEquipe || '—',
+      cabecalho.dataExecucao || '—',
+      cabecalho.observacao || '—',
+    ]],
   });
 
-  y = (doc.lastAutoTable?.finalY ?? y + 8) + 0.5;
-
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MX, right: MX },
-    tableWidth: CONT_W,
-    theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 2, valign: 'top', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
-    head: [['OBSERVAÇÃO']],
-    body: [[cabecalho.observacao]],
-  });
-
-  y = (doc.lastAutoTable?.finalY ?? y + 12) + 3;
+  y = (doc.lastAutoTable?.finalY ?? y + 8) + 3;
 
   autoTable(doc, {
     startY: y,
