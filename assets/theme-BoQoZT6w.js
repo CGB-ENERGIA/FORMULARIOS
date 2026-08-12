@@ -1,1 +1,0 @@
-import{f as e}from"./index-BbyPYokc.js";import{t}from"./theme-mDEOxyNA.js";var n=e(()=>{t().init()});export{n as default};
