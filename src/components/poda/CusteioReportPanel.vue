@@ -53,19 +53,33 @@
               @filter="filterMunicipios"
             />
           </div>
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-2">
+            <div class="text-caption text-grey-7 q-mb-xs">Tipo *</div>
+            <q-btn-toggle
+              v-model="cabecalho.tipoOrdem"
+              :options="[{ label: 'ORDEM', value: 'ordem' }, { label: 'INCIDENTE', value: 'incidente' }]"
+              dense
+              no-caps
+              unelevated
+              toggle-color="primary"
+              color="grey-3"
+              text-color="dark"
+              style="width: 100%"
+            />
+          </div>
+          <div class="col-12 col-md-4">
             <q-input
-              v-model="cabecalho.ordemIncidente"
-              label="Ordem / Incidente *"
+              v-if="cabecalho.tipoOrdem === 'incidente'"
+              v-model="cabecalho.numeroIncidente"
+              label="Nº do Incidente *"
               outlined
               dense
               hide-bottom-space
-              :error="validacaoAtiva && !cabecalho.ordemIncidente.trim()"
-              error-message="Informe a ordem / incidente"
+              :error="validacaoAtiva && !cabecalho.numeroIncidente.trim()"
+              error-message="Informe o número do incidente"
             />
-          </div>
-          <div class="col-12 col-md-3">
             <q-input
+              v-else
               v-model="cabecalho.componenteOuPg"
               label="Componente ou PG *"
               outlined
@@ -74,6 +88,42 @@
               :error="validacaoAtiva && !cabecalho.componenteOuPg.trim()"
               error-message="Informe o componente ou PG"
             />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="cabecalho.prefixoEquipe"
+              label="Prefixo da equipe *"
+              outlined
+              dense
+              hide-bottom-space
+              :error="validacaoAtiva && !cabecalho.prefixoEquipe.trim()"
+              error-message="Informe o prefixo da equipe"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input
+              v-model="cabecalho.dataExecucao"
+              label="Data de execução *"
+              outlined
+              dense
+              mask="##/##/####"
+              placeholder="DD/MM/AAAA"
+              hide-bottom-space
+              :error="validacaoAtiva && !cabecalho.dataExecucao.trim()"
+              error-message="Informe a data de execução"
+            >
+              <template #append>
+                <q-icon name="event" class="cursor-pointer">
+                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                    <q-date v-model="cabecalho.dataExecucao" mask="DD/MM/YYYY">
+                      <div class="row items-center justify-end">
+                        <q-btn v-close-popup label="Fechar" color="primary" flat no-caps />
+                      </div>
+                    </q-date>
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
           </div>
           <div class="col-12">
             <q-input

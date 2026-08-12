@@ -4,8 +4,11 @@ import { ref, watch } from 'vue';
 export interface CusteioCabecalho {
   base: string;
   municipio: string;
-  ordemIncidente: string;
+  tipoOrdem: 'ordem' | 'incidente';
+  numeroIncidente: string;
   componenteOuPg: string;
+  prefixoEquipe: string;
+  dataExecucao: string;
   observacao: string;
 }
 
@@ -26,8 +29,11 @@ function createDefaultCabecalho(): CusteioCabecalho {
   return {
     base: '',
     municipio: '',
-    ordemIncidente: '',
+    tipoOrdem: 'ordem',
+    numeroIncidente: '',
     componenteOuPg: '',
+    prefixoEquipe: '',
+    dataExecucao: '',
     observacao: '',
   };
 }

@@ -72,9 +72,36 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
     body: [[
       formatDistritalLabel(cabecalho.base),
       cabecalho.municipio,
-      cabecalho.ordemIncidente,
-      cabecalho.componenteOuPg,
+      cabecalho.tipoOrdem === 'incidente'
+        ? `INC ${cabecalho.numeroIncidente || '—'}`
+        : '—',
+      cabecalho.tipoOrdem === 'ordem'
+        ? `CP-${cabecalho.componenteOuPg || '—'}`
+        : '—',
     ]],
+  });
+
+  y = (doc.lastAutoTable?.finalY ?? y + 8) + 0.5;
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: MX, right: MX },
+    tableWidth: CONT_W,
+    theme: 'grid',
+    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', lineColor: GRAY, lineWidth: 0.2 },
+    headStyles: {
+      fillColor: LBLUE,
+      textColor: DBLUE,
+      fontStyle: 'bold',
+      halign: 'center',
+      fontSize: 7,
+    },
+    columnStyles: {
+      0: { cellWidth: CONT_W * 0.5 },
+      1: { cellWidth: CONT_W * 0.5 },
+    },
+    head: [['PREFIXO DA EQUIPE', 'DATA DE EXECUÇÃO']],
+    body: [[cabecalho.prefixoEquipe || '—', cabecalho.dataExecucao || '—']],
   });
 
   y = (doc.lastAutoTable?.finalY ?? y + 8) + 0.5;
