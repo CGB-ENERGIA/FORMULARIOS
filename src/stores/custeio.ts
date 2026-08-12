@@ -5,7 +5,7 @@ export interface CusteioCabecalho {
   base: string;
   municipio: string;
   tipoOrdem: 'ordem' | 'incidente';
-  numeroIncidente: string;
+  ordemNumero: string;
   componenteOuPg: string;
   prefixoEquipe: string;
   dataExecucao: string;
@@ -30,7 +30,7 @@ function createDefaultCabecalho(): CusteioCabecalho {
     base: '',
     municipio: '',
     tipoOrdem: 'ordem',
-    numeroIncidente: '',
+    ordemNumero: '',
     componenteOuPg: '',
     prefixoEquipe: '',
     dataExecucao: '',

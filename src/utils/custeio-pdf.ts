@@ -73,11 +73,9 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
       formatDistritalLabel(cabecalho.base),
       cabecalho.municipio,
       cabecalho.tipoOrdem === 'incidente'
-        ? `INC ${cabecalho.numeroIncidente || '—'}`
-        : '—',
-      cabecalho.tipoOrdem === 'ordem'
-        ? `CP-${cabecalho.componenteOuPg || '—'}`
-        : '—',
+        ? `INC ${cabecalho.ordemNumero || '—'}`
+        : `CP-${cabecalho.ordemNumero || '—'}`,
+      cabecalho.componenteOuPg || '—',
     ]],
   });
 

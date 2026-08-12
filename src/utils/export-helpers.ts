@@ -47,16 +47,15 @@ export function buildCusteioExportFileName(
     prefixoEquipe?: string;
     dataExecucao?: string;
     tipoOrdem?: 'ordem' | 'incidente';
-    numeroIncidente?: string;
-    componenteOuPg?: string;
+    ordemNumero?: string;
   },
   extension: 'xlsx' | 'pdf',
 ): string {
   const equipe = sanitizeFileNamePart(cabecalho.prefixoEquipe || '') || 'EQUIPE';
   const data = cabecalho.dataExecucao ? formatDataDiaMes(cabecalho.dataExecucao) : 'DATA';
   const ref = cabecalho.tipoOrdem === 'incidente'
-    ? `INC ${sanitizeFileNamePart(cabecalho.numeroIncidente || '')}`
-    : `CP-${sanitizeFileNamePart(cabecalho.componenteOuPg || '')}`;
+    ? `INC ${sanitizeFileNamePart(cabecalho.ordemNumero || '')}`
+    : `CP-${sanitizeFileNamePart(cabecalho.ordemNumero || '')}`;
   return `RELATÓRIO CUSTEIO - ${equipe} - ${data} ${ref}.${extension}`;
 }
 

@@ -53,7 +53,7 @@
               @filter="filterMunicipios"
             />
           </div>
-          <div class="col-12 col-md-2">
+          <div class="col-12 col-md-3">
             <div class="text-caption text-grey-7 q-mb-xs">Tipo *</div>
             <q-btn-toggle
               v-model="cabecalho.tipoOrdem"
@@ -64,22 +64,21 @@
               toggle-color="primary"
               color="grey-3"
               text-color="dark"
+              class="q-mb-sm"
               style="width: 100%"
             />
-          </div>
-          <div class="col-12 col-md-4">
             <q-input
-              v-if="cabecalho.tipoOrdem === 'incidente'"
-              v-model="cabecalho.numeroIncidente"
-              label="Nº do Incidente *"
+              v-model="cabecalho.ordemNumero"
+              :label="cabecalho.tipoOrdem === 'ordem' ? 'Nº da Ordem *' : 'Nº do Incidente *'"
               outlined
               dense
               hide-bottom-space
-              :error="validacaoAtiva && !cabecalho.numeroIncidente.trim()"
-              error-message="Informe o número do incidente"
+              :error="validacaoAtiva && !cabecalho.ordemNumero.trim()"
+              error-message="Informe o número"
             />
+          </div>
+          <div class="col-12 col-md-3">
             <q-input
-              v-else
               v-model="cabecalho.componenteOuPg"
               label="Componente ou PG *"
               outlined
