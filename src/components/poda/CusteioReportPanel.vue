@@ -54,28 +54,28 @@
             />
           </div>
           <div class="col-12 col-md-3">
-            <div class="text-caption text-grey-7 q-mb-xs">Tipo *</div>
-            <q-btn-toggle
-              v-model="cabecalho.tipoOrdem"
-              :options="[{ label: 'ORDEM', value: 'ordem' }, { label: 'INCIDENTE', value: 'incidente' }]"
-              dense
-              no-caps
-              unelevated
-              toggle-color="primary"
-              color="grey-3"
-              text-color="dark"
-              class="q-mb-sm"
-              style="width: 100%"
-            />
             <q-input
               v-model="cabecalho.ordemNumero"
-              :label="cabecalho.tipoOrdem === 'ordem' ? 'Nº da Ordem *' : 'Nº do Incidente *'"
+              label="Ordem / Incidente *"
               outlined
               dense
               hide-bottom-space
               :error="validacaoAtiva && !cabecalho.ordemNumero.trim()"
               error-message="Informe o número"
-            />
+            >
+              <template #prepend>
+                <q-select
+                  v-model="cabecalho.tipoOrdem"
+                  :options="[{ label: 'CP', value: 'ordem' }, { label: 'INC', value: 'incidente' }]"
+                  dense
+                  borderless
+                  emit-value
+                  map-options
+                  style="min-width: 58px"
+                />
+                <q-separator vertical class="q-mx-xs" />
+              </template>
+            </q-input>
           </div>
           <div class="col-12 col-md-3">
             <q-input
