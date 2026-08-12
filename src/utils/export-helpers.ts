@@ -48,6 +48,7 @@ export function buildCusteioExportFileName(
     dataExecucao?: string;
     tipoOrdem?: 'ordem' | 'incidente';
     ordemNumero?: string;
+    componenteOuPg?: string;
   },
   extension: 'xlsx' | 'pdf',
 ): string {
@@ -55,8 +56,9 @@ export function buildCusteioExportFileName(
   const data = cabecalho.dataExecucao ? formatDataDiaMes(cabecalho.dataExecucao) : 'DATA';
   const ref = cabecalho.tipoOrdem === 'incidente'
     ? `INC ${sanitizeFileNamePart(cabecalho.ordemNumero || '')}`
-    : `CP-${sanitizeFileNamePart(cabecalho.ordemNumero || '')}`;
+    : `CP-${sanitizeFileNamePart(cabecalho.componenteOuPg || '')}`;
   return `RELATÓRIO CUSTEIO - ${equipe} - ${data} ${ref}.${extension}`;
+
 }
 
 export function buildPodaExportFileName(cabecalho: { pep?: string }, extension: 'pdf' = 'pdf'): string {

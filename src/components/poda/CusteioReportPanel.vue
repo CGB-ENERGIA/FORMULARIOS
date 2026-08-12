@@ -56,19 +56,19 @@
           <div class="col-12 col-md-3">
             <q-input
               v-model="cabecalho.ordemNumero"
-              label="Ordem / Incidente *"
+              :label="cabecalho.tipoOrdem === 'incidente' ? 'Nº do Incidente *' : 'Nº da Ordem (opcional)'"
               outlined
               dense
               hide-bottom-space
-              :error="validacaoAtiva && !cabecalho.ordemNumero.trim()"
-              error-message="Informe o número"
+              :error="validacaoAtiva && cabecalho.tipoOrdem === 'incidente' && !cabecalho.ordemNumero.trim()"
+              error-message="Informe o número do incidente"
             >
               <template #prepend>
                 <q-btn
                   flat no-caps dense padding="xs sm" size="sm"
                   :color="cabecalho.tipoOrdem === 'ordem' ? 'primary' : 'grey'"
                   :class="{ 'text-weight-bold': cabecalho.tipoOrdem === 'ordem' }"
-                  label="CP"
+                  label="ORDEM"
                   @click="cabecalho.tipoOrdem = 'ordem'"
                 />
                 <q-btn

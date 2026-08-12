@@ -74,7 +74,7 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
       cabecalho.municipio,
       cabecalho.tipoOrdem === 'incidente'
         ? `INC ${cabecalho.ordemNumero || '—'}`
-        : `CP-${cabecalho.ordemNumero || '—'}`,
+        : `CP-${cabecalho.componenteOuPg || '—'}`,
       cabecalho.componenteOuPg || '—',
     ]],
   });
