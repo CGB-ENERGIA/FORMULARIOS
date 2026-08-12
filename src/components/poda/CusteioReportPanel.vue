@@ -94,14 +94,21 @@
             />
           </div>
           <div class="col-12 col-md-4">
-            <q-input
+            <q-select
               v-model="cabecalho.prefixoEquipe"
+              :options="equipeOptionsFiltered"
               label="Prefixo da equipe *"
               outlined
               dense
               hide-bottom-space
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
               :error="validacaoAtiva && !cabecalho.prefixoEquipe.trim()"
               error-message="Informe o prefixo da equipe"
+              @filter="filterEquipes"
+              @update:model-value="onEquipeSelecionada"
             />
           </div>
           <div class="col-12 col-md-3">
@@ -326,6 +333,7 @@ import { validateCusteioCabecalho } from 'src/utils/custeio-helpers';
 import { formatDistritalLabel } from 'src/utils/arrasto-helpers';
 import distritaisData from 'src/data/arrasto-distritais.json';
 import municipiosMaranhaoData from 'src/data/municipios-maranhao.json';
+import custeioEquipesData from 'src/data/custeio-equipes.json';
 
 const $q = useQuasar();
 const store = useCusteioStore();
@@ -339,6 +347,10 @@ const baseOptions = (distritaisData as string[]).map((value) => ({
 
 const municipioOptions = municipiosMaranhaoData as string[];
 const municipioOptionsFiltered = ref(municipioOptions);
+
+const equipeMap = custeioEquipesData as Record<string, string>;
+const equipeOptions = Object.keys(equipeMap);
+const equipeOptionsFiltered = ref(equipeOptions);
 
 function normalizeSearch(value: string): string {
   return value
@@ -357,6 +369,21 @@ function filterMunicipios(
       ? municipioOptions
       : municipioOptions.filter((m) => normalizeSearch(m).includes(needle));
   });
+}
+
+function filterEquipes(val: string, update: (callback: () => void) => void) {
+  update(() => {
+    const needle = normalizeSearch(val);
+    equipeOptionsFiltered.value = needle === ''
+      ? equipeOptions
+      : equipeOptions.filter((e) => normalizeSearch(e).includes(needle));
+  });
+}
+
+function onEquipeSelecionada(prefixo: string | null) {
+  if (!prefixo) return;
+  const base = equipeMap[prefixo];
+  if (base) cabecalho.value.base = base;
 }
 
 const validacaoAtiva = ref(false);
