@@ -64,14 +64,19 @@
               error-message="Informe o número"
             >
               <template #prepend>
-                <q-select
-                  v-model="cabecalho.tipoOrdem"
-                  :options="[{ label: 'CP', value: 'ordem' }, { label: 'INC', value: 'incidente' }]"
-                  dense
-                  borderless
-                  emit-value
-                  map-options
-                  style="min-width: 58px"
+                <q-btn
+                  flat no-caps dense padding="xs sm" size="sm"
+                  :color="cabecalho.tipoOrdem === 'ordem' ? 'primary' : 'grey'"
+                  :class="{ 'text-weight-bold': cabecalho.tipoOrdem === 'ordem' }"
+                  label="CP"
+                  @click="cabecalho.tipoOrdem = 'ordem'"
+                />
+                <q-btn
+                  flat no-caps dense padding="xs sm" size="sm"
+                  :color="cabecalho.tipoOrdem === 'incidente' ? 'primary' : 'grey'"
+                  :class="{ 'text-weight-bold': cabecalho.tipoOrdem === 'incidente' }"
+                  label="INC"
+                  @click="cabecalho.tipoOrdem = 'incidente'"
                 />
                 <q-separator vertical class="q-mx-xs" />
               </template>
