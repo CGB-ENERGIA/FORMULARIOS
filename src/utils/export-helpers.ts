@@ -56,7 +56,7 @@ export function buildCusteioExportFileName(
   const data = cabecalho.dataExecucao ? formatDataDiaMes(cabecalho.dataExecucao) : 'DATA';
   const ref = cabecalho.tipoOrdem === 'incidente'
     ? `INC ${sanitizeFileNamePart(cabecalho.ordemNumero || '')}`
-    : `CP-${sanitizeFileNamePart(cabecalho.componenteOuPg || '')}`;
+    : `CP-${sanitizeFileNamePart(cabecalho.ordemNumero || cabecalho.componenteOuPg || '')}`;
   return `RELATÓRIO CUSTEIO - ${equipe} - ${data} ${ref}.${extension}`;
 
 }
