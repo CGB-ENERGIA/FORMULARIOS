@@ -1,1 +1,0 @@
-import{f as e}from"./index-Bshmf3nD.js";import{t}from"./theme-BDlgUefT.js";var n=e(()=>{t().init()});export{n as default};
