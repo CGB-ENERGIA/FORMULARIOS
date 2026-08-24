@@ -144,12 +144,12 @@ function drawEvidencia(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(5.5);
   doc.setTextColor(...LBLUE);
-  doc.text('QTD', QTD_X + QTD_W / 2, y + 4.5, { align: 'center' });
+  doc.text('QTD', QTD_X + QTD_W / 2, y + 4, { align: 'center' });
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(255, 255, 255);
-  doc.text(qtd, QTD_X + QTD_W / 2, y + 8.5, { align: 'center' });
+  doc.text(qtd, QTD_X + QTD_W / 2, y + 7.5, { align: 'center' });
 
   y += HEADER_H;
 
