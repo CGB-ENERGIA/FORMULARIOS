@@ -109,26 +109,33 @@ function drawEvidencia(
 ): number {
   const xR = MX + PHOTO_W + 4;
 
-  doc.setFillColor(...LBLUE);
-  doc.rect(MX, y, CONT_W, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(...DBLUE);
-  doc.text('EVIDÊNCIAS FOTOGRÁFICAS:', MX + 2, y + 4);
-  y += 6;
-
+  // Barra única com REG.001 + atividade do usuário + quantidade
   const regL = `REG.${String(regInicio).padStart(3, '0')}`;
   const regR = `REG.${String(regFim).padStart(3, '0')}`;
+  const atividade = servico.atividade?.trim() || 'EVIDÊNCIA FOTOGRÁFICA';
+  const qtd = servico.quantidade?.trim() ? `QTD: ${servico.quantidade}` : '';
 
   doc.setFillColor(...LGRAY);
-  doc.rect(MX, y, PHOTO_W, 6, 'F');
-  doc.rect(xR, y, PHOTO_W, 6, 'F');
+  doc.rect(MX, y, CONT_W, 7, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7);
   doc.setTextColor(...DBLUE);
-  doc.text(`${regL}  REGISTRO INÍCIO DOS TRABALHOS`, MX + 2, y + 4);
-  doc.text(`${regR}  REGISTRO DO FIM DOS TRABALHOS`, xR + 2, y + 4);
-  y += 6;
+  doc.text(`${regL}  ${atividade}`, MX + 2, y + 4.5);
+  if (qtd) {
+    doc.text(qtd, MX + CONT_W - 2, y + 4.5, { align: 'right' });
+  }
+  y += 7;
+
+  // Labels dos registros (pequenos, acima das fotos)
+  doc.setFillColor(220, 230, 241);
+  doc.rect(MX, y, PHOTO_W, 5, 'F');
+  doc.rect(xR, y, PHOTO_W, 5, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...DBLUE);
+  doc.text(`${regL}  INÍCIO DOS TRABALHOS`, MX + 2, y + 3.3);
+  doc.text(`${regR}  FIM DOS TRABALHOS`, xR + 2, y + 3.3);
+  y += 5;
 
   doc.setDrawColor(...GRAY);
   doc.rect(MX, y, PHOTO_W, PHOTO_H);
@@ -176,25 +183,6 @@ export async function exportCusteioToPdf(
 
   let y = MX;
   y = drawHeader(doc, banner, cabecalho, y);
-
-  // Tabela de atividades e quantidades
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MX, right: MX },
-    tableWidth: CONT_W,
-    theme: 'grid',
-    styles: { fontSize: 7, cellPadding: 2.5, valign: 'middle', halign: 'center', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7.5 },
-    columnStyles: {
-      0: { cellWidth: 12, halign: 'center' },
-      1: { cellWidth: CONT_W - 12 - 28, halign: 'left' },
-      2: { cellWidth: 28, halign: 'center' },
-    },
-    head: [['Nº', 'ATIVIDADE', 'QUANTIDADE']],
-    body: preenchidos.map((s) => [String(s.id), s.atividade || '—', s.quantidade || '—']),
-  });
-
-  y = (doc.lastAutoTable?.finalY ?? y + 20) + 4;
 
   // Evidências fotográficas por serviço
   let reg = 1;
