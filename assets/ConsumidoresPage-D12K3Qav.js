@@ -1,1 +1,0 @@
-import{A as e,D as t,d as n,h as r}from"./runtime-core.esm-bundler-Cg_Eizo4.js";import{l as i}from"./index-DqHPvcYj.js";var a=r({__name:`ConsumidoresPage`,setup(r){let a=i();return t(()=>{a.replace({path:`/clientes`,query:{tab:`consumidores`}})}),(t,r)=>(e(),n(`div`))}});export{a as default};
