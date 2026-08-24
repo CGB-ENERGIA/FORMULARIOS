@@ -1,1 +1,0 @@
-import{f as e}from"./index-D9wcTAt6.js";var t=e(({app:e,store:t})=>{e.use(t)});export{t as default};
