@@ -10,12 +10,8 @@ import { savePdfWithWatermark } from './pdf-watermark';
 const BANNER_URL = publicAsset('template/banner.png');
 
 const PAGE_W = 210;
-const PAGE_H = 297;
 const MX = 8;
 const CONT_W = PAGE_W - MX * 2;
-const PHOTO_W = (CONT_W - 4) / 2;
-const PHOTO_H = PHOTO_W * (9.6 / 12.8);
-const SEC_H = 6 + 6 + PHOTO_H + 4;
 
 const LBLUE: [number, number, number] = [189, 215, 238];
 const DBLUE: [number, number, number] = [31, 73, 125];
@@ -99,95 +95,9 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
 
   y = (doc.lastAutoTable?.finalY ?? y + 8) + 3;
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MX, right: MX },
-    tableWidth: CONT_W,
-    theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 2, valign: 'top', lineColor: GRAY, lineWidth: 0.2 },
-    headStyles: {
-      fillColor: LBLUE,
-      textColor: DBLUE,
-      fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 7,
-    },
-    columnStyles: {
-      0: { cellWidth: CONT_W / 2 },
-      1: { cellWidth: CONT_W / 2 },
-    },
-    head: [['OBJETIVO', 'REGISTRO FOTOGRÁFICO']],
-    body: [[
-      'Comprovar a execução dos serviços prestados, bem como subsidiar a validação pela empresa contratante - EQTL MA da medição (atividade/quantidade) e a qualidade dos referidos serviços.',
-      'Registro do cenário antes da execução dos serviços e depois para comprovação da execução. Fazer o registro de forma a se obter uma comparação do cenário antes e depois dos serviços prestados.',
-    ]],
-  });
-
-  y = (doc.lastAutoTable?.finalY ?? y + 20) + 3;
-  return y;
+  return (doc.lastAutoTable?.finalY ?? y + 8) + 3;
 }
 
-function drawEvidencia(
-  doc: jsPDF,
-  servico: CusteioServico,
-  regInicio: number,
-  regFim: number,
-  y: number,
-): number {
-  const xR = MX + PHOTO_W + 4;
-
-  doc.setFillColor(...LBLUE);
-  doc.rect(MX, y, CONT_W, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(...DBLUE);
-  doc.text('EVIDÊNCIAS FOTOGRÁFICAS:', MX + 2, y + 4);
-  y += 6;
-
-  const regL = `REG.${String(regInicio).padStart(3, '0')}`;
-  const regR = `REG.${String(regFim).padStart(3, '0')}`;
-
-  doc.setFillColor(...LGRAY);
-  doc.rect(MX, y, PHOTO_W, 6, 'F');
-  doc.rect(xR, y, PHOTO_W, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(...DBLUE);
-  doc.text(`${regL}  REGISTRO INÍCIO DOS TRABALHOS`, MX + 2, y + 4);
-  doc.text(`${regR}  REGISTRO DO FIM DOS TRABALHOS`, xR + 2, y + 4);
-  y += 6;
-
-  doc.setDrawColor(...GRAY);
-  doc.rect(MX, y, PHOTO_W, PHOTO_H);
-  doc.rect(xR, y, PHOTO_W, PHOTO_H);
-
-  if (servico.fotoInicio) {
-    const fmt = servico.fotoInicio.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    try { doc.addImage(servico.fotoInicio, fmt, MX + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
-    catch { drawPlaceholder(doc, MX, y); }
-  } else {
-    drawPlaceholder(doc, MX, y);
-  }
-
-  if (servico.fotoFim) {
-    const fmt = servico.fotoFim.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    try { doc.addImage(servico.fotoFim, fmt, xR + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
-    catch { drawPlaceholder(doc, xR, y); }
-  } else {
-    drawPlaceholder(doc, xR, y);
-  }
-
-  y += PHOTO_H + 4;
-  return y;
-}
-
-function drawPlaceholder(doc: jsPDF, x: number, y: number) {
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(180, 180, 180);
-  doc.text('Sem foto', x + PHOTO_W / 2, y + PHOTO_H / 2, { align: 'center' });
-  doc.setTextColor(0, 0, 0);
-}
 
 export async function exportCusteioToPdf(
   cabecalho: CusteioCabecalho,
@@ -202,21 +112,27 @@ export async function exportCusteioToPdf(
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' }) as DocEx;
 
   let y = MX;
-  let reg = 1;
-
   y = drawHeader(doc, banner, cabecalho, y);
 
-  for (let i = 0; i < preenchidos.length; i++) {
-    const s = preenchidos[i]!;
-
-    if (y + SEC_H > PAGE_H - MX) {
-      doc.addPage();
-      y = MX;
-    }
-
-    y = drawEvidencia(doc, s, reg, reg + 1, y);
-    reg += 2;
-  }
+  autoTable(doc, {
+    startY: y,
+    margin: { left: MX, right: MX },
+    tableWidth: CONT_W,
+    theme: 'grid',
+    styles: { fontSize: 7, cellPadding: 2.5, valign: 'middle', halign: 'center', lineColor: GRAY, lineWidth: 0.2 },
+    headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7.5 },
+    columnStyles: {
+      0: { cellWidth: 12, halign: 'center' },
+      1: { cellWidth: CONT_W - 12 - 28, halign: 'left' },
+      2: { cellWidth: 28, halign: 'center' },
+    },
+    head: [['Nº', 'ATIVIDADE', 'QUANTIDADE']],
+    body: preenchidos.map((s) => [
+      String(s.id),
+      s.atividade || '—',
+      s.quantidade || '—',
+    ]),
+  });
 
   const fileName = buildCusteioExportFileName(cabecalho, 'pdf');
   return savePdfWithWatermark(doc, fileName);

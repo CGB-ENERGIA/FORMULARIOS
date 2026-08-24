@@ -14,8 +14,8 @@ export interface CusteioCabecalho {
 
 export interface CusteioServico {
   id: number;
-  fotoInicio: string;
-  fotoFim: string;
+  atividade: string;
+  quantidade: string;
 }
 
 const STORAGE_KEY = 'formularios-web:custeio';
@@ -39,11 +39,11 @@ function createDefaultCabecalho(): CusteioCabecalho {
 }
 
 function createEmptyServico(id: number): CusteioServico {
-  return { id, fotoInicio: '', fotoFim: '' };
+  return { id, atividade: '', quantidade: '' };
 }
 
 export function servicoPreenchido(s: CusteioServico): boolean {
-  return !!(s.fotoInicio || s.fotoFim);
+  return !!(s.atividade.trim() || s.quantidade.trim());
 }
 
 function migrateLegacyState(parsed: Record<string, unknown>): CusteioPersistedState | null {
@@ -51,14 +51,7 @@ function migrateLegacyState(parsed: Record<string, unknown>): CusteioPersistedSt
   if (!Array.isArray(evidencias)) return null;
 
   const obra = parsed.obra as Record<string, string> | undefined;
-  const servicos = evidencias.map((item, i) => {
-    const e = item as Record<string, string>;
-    return {
-      id: i + 1,
-      fotoInicio: e.fotoAntes ?? '',
-      fotoFim: e.fotoDepois ?? '',
-    };
-  });
+  const servicos = evidencias.map((_item, i) => createEmptyServico(i + 1));
 
   return {
     cabecalho: {
@@ -86,8 +79,8 @@ function loadPersistedState(): CusteioPersistedState | null {
     const servicos = Array.isArray(parsed.servicos) && parsed.servicos.length > 0
       ? parsed.servicos.map((s, i) => ({
           id: i + 1,
-          fotoInicio: s?.fotoInicio ?? '',
-          fotoFim: s?.fotoFim ?? '',
+          atividade: s?.atividade ?? '',
+          quantidade: s?.quantidade ?? '',
         }))
       : Array.from({ length: 5 }, (_, i) => createEmptyServico(i + 1));
 
