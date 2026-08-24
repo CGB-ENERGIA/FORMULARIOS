@@ -461,7 +461,6 @@ import { useConsumidoresStore, FORNECEDOR_FIXO, REGIONAL_FIXA, TEC_OBRA_FIXO } f
 import type { Consumidor, ObraInfo } from 'src/stores/consumidores';
 import { consumidorPreenchido } from 'src/utils/excel';
 import {
-  applyTipoLigacaoFromMedidor,
   getMedidorFieldError,
   sanitizeDigits,
   validateConsumidoresParaExportacao,
@@ -617,7 +616,6 @@ function medidorObrigatorioPendente(row: Consumidor): boolean {
 
 function onNumeroMedidorInput(consumidor: Consumidor, value: string | number | null) {
   consumidor.numeroMedidor = sanitizeDigits(value);
-  applyTipoLigacaoFromMedidor(consumidor);
 }
 
 function obraFieldError(field: keyof ObraInfo) {
