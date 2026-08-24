@@ -26,11 +26,6 @@ export function getConsumidoresPreenchidos(consumidores: Consumidor[]) {
   return consumidores.filter(consumidorPreenchido);
 }
 
-const MEDIDOR_PREFIX: Partial<Record<Consumidor['tipoLigacao'], string>> = {
-  MO: '1',
-  TRI: '3',
-};
-
 export function inferTipoLigacaoFromMedidor(numeroMedidor: string): 'MO' | 'TRI' | null {
   const first = numeroMedidor.trim().charAt(0);
   if (first === '1') return 'MO';
@@ -45,36 +40,11 @@ export function applyTipoLigacaoFromMedidor(consumidor: Consumidor): void {
   }
 }
 
-export function validateMedidorPorTipoLigacao(consumidor: Consumidor): string | null {
-  const prefix = MEDIDOR_PREFIX[consumidor.tipoLigacao];
-  if (!prefix) return null;
-
-  const medidor = consumidor.numeroMedidor.trim();
-  const tipoLabel = consumidor.tipoLigacao === 'MO' ? 'monofásico (MO)' : 'trifásico (TRI)';
-
-  if (!medidor) {
-    return `Informe o número do medidor ${tipoLabel}.`;
-  }
-
-  if (!medidor.startsWith(prefix)) {
-    return `Medidor ${tipoLabel} deve começar com ${prefix}.`;
-  }
-
+export function validateMedidorPorTipoLigacao(_consumidor: Consumidor): string | null {
   return null;
 }
 
-export function getMedidorFieldError(consumidor: Consumidor): string | null {
-  const prefix = MEDIDOR_PREFIX[consumidor.tipoLigacao];
-  if (!prefix) return null;
-
-  const medidor = consumidor.numeroMedidor.trim();
-  if (!medidor) return null;
-
-  if (!medidor.startsWith(prefix)) {
-    const tipoLabel = consumidor.tipoLigacao === 'MO' ? 'monofásico (MO)' : 'trifásico (TRI)';
-    return `Medidor ${tipoLabel} deve começar com ${prefix}.`;
-  }
-
+export function getMedidorFieldError(_consumidor: Consumidor): string | null {
   return null;
 }
 
