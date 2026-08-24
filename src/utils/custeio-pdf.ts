@@ -15,12 +15,16 @@ const MX = 8;
 const CONT_W = PAGE_W - MX * 2;
 const PHOTO_W = (CONT_W - 4) / 2;
 const PHOTO_H = PHOTO_W * (9.6 / 12.8);
-const SEC_H = 6 + 6 + PHOTO_H + 4;
+const HEADER_H = 10;
+const REG_H = 5;
+const SEC_H = HEADER_H + REG_H + PHOTO_H + 4;
 
 const LBLUE: [number, number, number] = [189, 215, 238];
 const DBLUE: [number, number, number] = [31, 73, 125];
-const LGRAY: [number, number, number] = [242, 242, 242];
 const GRAY: [number, number, number] = [166, 166, 166];
+const LBLUE_LIGHT: [number, number, number] = [238, 245, 251];
+const MID_BLUE: [number, number, number] = [93, 130, 168];
+const PILL_BLUE: [number, number, number] = [55, 96, 146];
 
 type DocEx = jsPDF & {
   lastAutoTable?: { finalY: number };
@@ -108,34 +112,79 @@ function drawEvidencia(
   y: number,
 ): number {
   const xR = MX + PHOTO_W + 4;
-
   const regL = `REG.${String(regInicio).padStart(3, '0')}`;
   const regR = `REG.${String(regFim).padStart(3, '0')}`;
-
-  // Barra cinza centralizada: ATIVIDADE: [texto]   QUANTIDADE: [valor]
   const atividade = servico.atividade?.trim() || '—';
   const qtd = servico.quantidade?.trim() || '—';
-  const barText = `ATIVIDADE: ${atividade}     QUANTIDADE: ${qtd}`;
 
-  doc.setFillColor(...LGRAY);
-  doc.rect(MX, y, CONT_W, 7, 'F');
+  // ── Header azul escuro ──────────────────────────────────
+  doc.setFillColor(...DBLUE);
+  doc.rect(MX, y, CONT_W, HEADER_H, 'F');
+
+  // Label "ATIVIDADE" pequeno em azul claro
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(...DBLUE);
-  doc.text(barText, MX + CONT_W / 2, y + 4.5, { align: 'center' });
-  y += 7;
+  doc.setFontSize(5.5);
+  doc.setTextColor(...LBLUE);
+  doc.text('ATIVIDADE', MX + 3, y + 3.5);
 
-  // Labels simplificados acima das fotos
-  doc.setFillColor(220, 230, 241);
-  doc.rect(MX, y, PHOTO_W, 5, 'F');
-  doc.rect(xR, y, PHOTO_W, 5, 'F');
+  // Valor da atividade em branco
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text(atividade, MX + 3, y + 7.8);
+
+  // Pill de quantidade à direita
+  const QTD_W = 24;
+  const QTD_X = MX + CONT_W - QTD_W - 3;
+  doc.setFillColor(...PILL_BLUE);
+  doc.setDrawColor(...LBLUE);
+  doc.setLineWidth(0.3);
+  doc.rect(QTD_X, y + 1.5, QTD_W, HEADER_H - 3, 'FD');
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(5.5);
+  doc.setTextColor(...LBLUE);
+  doc.text('QTD', QTD_X + QTD_W / 2, y + 4.5, { align: 'center' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text(qtd, QTD_X + QTD_W / 2, y + 8.5, { align: 'center' });
+
+  y += HEADER_H;
+
+  // ── Linha de labels REG (azul claro) ───────────────────
+  doc.setFillColor(...LBLUE_LIGHT);
+  doc.rect(MX, y, CONT_W, REG_H, 'F');
+
+  const SEP_X = MX + PHOTO_W + 2;
+  doc.setDrawColor(...LBLUE);
+  doc.setLineWidth(0.3);
+  doc.line(SEP_X, y, SEP_X, y + REG_H);
+
+  // REG.001 + INÍCIO
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6);
   doc.setTextColor(...DBLUE);
-  doc.text(`${regL}  INÍCIO`, MX + 2, y + 3.3);
-  doc.text(`${regR}  FINAL`, xR + 2, y + 3.3);
-  y += 5;
+  doc.text(regL, MX + 2, y + 3.3);
+  const wL = doc.getTextWidth(regL);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MID_BLUE);
+  doc.text(' INÍCIO', MX + 2 + wL, y + 3.3);
 
+  // REG.002 + FINAL
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6);
+  doc.setTextColor(...DBLUE);
+  doc.text(regR, xR + 2, y + 3.3);
+  const wR = doc.getTextWidth(regR);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MID_BLUE);
+  doc.text(' FINAL', xR + 2 + wR, y + 3.3);
+
+  y += REG_H;
+
+  // ── Fotos ──────────────────────────────────────────────
   doc.setDrawColor(...GRAY);
   doc.rect(MX, y, PHOTO_W, PHOTO_H);
   doc.rect(xR, y, PHOTO_W, PHOTO_H);
@@ -183,7 +232,6 @@ export async function exportCusteioToPdf(
   let y = MX;
   y = drawHeader(doc, banner, cabecalho, y);
 
-  // Evidências fotográficas por serviço
   let reg = 1;
   for (const s of preenchidos) {
     if (y + SEC_H > PAGE_H - MX) {
