@@ -18,6 +18,7 @@ export interface CusteioServico {
   quantidade: string;
   fotoInicio: string;
   fotoFim: string;
+  fotosExtras: string[];
 }
 
 const STORAGE_KEY = 'formularios-web:custeio';
@@ -41,11 +42,11 @@ function createDefaultCabecalho(): CusteioCabecalho {
 }
 
 function createEmptyServico(id: number): CusteioServico {
-  return { id, atividade: '', quantidade: '', fotoInicio: '', fotoFim: '' };
+  return { id, atividade: '', quantidade: '', fotoInicio: '', fotoFim: '', fotosExtras: [] };
 }
 
 export function servicoPreenchido(s: CusteioServico): boolean {
-  return !!(s.atividade.trim() || s.quantidade.trim() || s.fotoInicio || s.fotoFim);
+  return !!(s.atividade.trim() || s.quantidade.trim() || s.fotoInicio || s.fotoFim || s.fotosExtras?.some(f => !!f));
 }
 
 function migrateLegacyState(parsed: Record<string, unknown>): CusteioPersistedState | null {
@@ -85,6 +86,7 @@ function loadPersistedState(): CusteioPersistedState | null {
           quantidade: s?.quantidade ?? '',
           fotoInicio: s?.fotoInicio ?? '',
           fotoFim: s?.fotoFim ?? '',
+          fotosExtras: Array.isArray(s?.fotosExtras) ? s.fotosExtras : [],
         }))
       : Array.from({ length: 5 }, (_, i) => createEmptyServico(i + 1));
 

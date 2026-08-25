@@ -297,6 +297,62 @@
             <input :ref="(el) => setFotoRef(el, idx, 'fim')" type="file" accept="image/*" style="display:none" @change="(e) => handleFotoChange(e, servico, 'fim')" />
           </div>
         </div>
+
+        <!-- EVIDÊNCIAS EXTRAS -->
+        <div v-if="servico.fotosExtras && servico.fotosExtras.length > 0" class="servico-card__extras">
+          <div v-for="(_, extraIdx) in servico.fotosExtras" :key="extraIdx" class="foto-slot">
+            <div class="foto-slot__label">
+              <q-icon name="photo_camera" size="14px" />
+              Evidência Extra {{ extraIdx + 1 }}
+              <q-btn
+                flat round dense icon="close" color="negative" size="xs"
+                class="q-ml-auto"
+                @click="removeFotoExtra(servico, extraIdx)"
+              >
+                <q-tooltip>Remover esta evidência</q-tooltip>
+              </q-btn>
+            </div>
+            <div
+              v-if="servico.fotosExtras[extraIdx]"
+              class="evidencia-zone evidencia-zone--filled relative-position"
+            >
+              <img
+                :src="servico.fotosExtras[extraIdx]"
+                style="width:100%; max-height:260px; object-fit:contain; border-radius:8px;"
+              />
+              <q-btn icon="close" round dense size="sm" color="negative" class="absolute-top-right q-ma-xs"
+                @click.stop="servico.fotosExtras.splice(extraIdx, 1)"
+              />
+            </div>
+            <div
+              v-else
+              class="evidencia-zone evidencia-zone--empty flex flex-center column"
+              tabindex="0"
+              @paste="(e) => handleExtraPaste(e, servico, extraIdx)"
+            >
+              <button type="button" class="evidencia-zone__upload-trigger" aria-label="Anexar imagem"
+                @click.stop="triggerFotoExtra(servico.id, extraIdx)">
+                <q-icon name="add_photo_alternate" size="40px" color="grey-5" />
+                <span class="text-grey-6 text-caption">Clique para anexar</span>
+              </button>
+              <span class="evidencia-zone__paste-hint text-grey-6 text-caption">ou selecione, cole (Ctrl+V) ou arraste</span>
+            </div>
+            <input
+              :ref="(el) => setExtraRef(el, servico.id, extraIdx)"
+              type="file"
+              accept="image/*"
+              style="display:none"
+              @change="(e) => handleFotoExtraChange(e, servico, extraIdx)"
+            />
+          </div>
+        </div>
+
+        <div class="servico-card__extras-bar">
+          <button class="extras-add-btn" @click="addFotoExtra(servico)">
+            <q-icon name="add_photo_alternate" size="16px" />
+            Adicionar evidência
+          </button>
+        </div>
       </div>
 
       <button class="servicos-add-btn" @click="addServico">
@@ -411,6 +467,45 @@ function selectCell(s: CusteioServico, tipo: Tipo, event?: Event) {
 const fotoRefs: Record<string, HTMLInputElement | null> = {};
 function setFotoRef(el: unknown, idx: number, tipo: Tipo) { fotoRefs[`${idx}-${tipo}`] = el as HTMLInputElement | null; }
 function triggerFoto(idx: number, tipo: Tipo) { fotoRefs[`${idx}-${tipo}`]?.click(); }
+
+const extrasRefs: Record<string, HTMLInputElement | null> = {};
+function setExtraRef(el: unknown, servicoId: number, extraIdx: number) {
+  extrasRefs[`${servicoId}-${extraIdx}`] = el as HTMLInputElement | null;
+}
+function triggerFotoExtra(servicoId: number, extraIdx: number) {
+  extrasRefs[`${servicoId}-${extraIdx}`]?.click();
+}
+function addFotoExtra(s: CusteioServico) {
+  if (!s.fotosExtras) s.fotosExtras = [];
+  s.fotosExtras.push('');
+}
+function removeFotoExtra(s: CusteioServico, idx: number) {
+  s.fotosExtras.splice(idx, 1);
+}
+function handleFotoExtraChange(event: Event, s: CusteioServico, idx: number) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  void readFileAsync(file).then((v) => { s.fotosExtras[idx] = v; });
+  (event.target as HTMLInputElement).value = '';
+}
+async function handleExtraPaste(event: ClipboardEvent, s: CusteioServico, idx: number) {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (!file) continue;
+      event.preventDefault();
+      try {
+        s.fotosExtras[idx] = await readFileAsync(file);
+        $q.notify({ type: 'positive', message: 'Imagem colada com sucesso.' });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Erro ao colar imagem.' });
+      }
+      return;
+    }
+  }
+}
 
 function readFileAsync(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -715,6 +810,46 @@ function handleReset() {
 }
 
 .body--dark .servicos-add-btn:hover {
+  border-color: var(--q-primary);
+}
+
+.servico-card__extras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  padding: 0 14px 8px;
+}
+
+.servico-card__extras-bar {
+  padding: 0 14px 14px;
+}
+
+.extras-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1.5px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--q-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+
+.extras-add-btn:hover {
+  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.06);
+  border-color: var(--q-primary);
+}
+
+.body--dark .extras-add-btn {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.body--dark .extras-add-btn:hover {
   border-color: var(--q-primary);
 }
 </style>

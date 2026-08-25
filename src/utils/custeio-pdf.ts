@@ -104,16 +104,35 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: CusteioCabecalho, y: 
   return (doc.lastAutoTable?.finalY ?? y + 8) + 3;
 }
 
+function drawRegRow(doc: jsPDF, regNum: number, label: string, x: number, y: number) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6);
+  doc.setTextColor(...DBLUE);
+  const regStr = `REG.${String(regNum).padStart(3, '0')}`;
+  doc.text(regStr, x + 2, y + 3.3);
+  const w = doc.getTextWidth(regStr);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MID_BLUE);
+  doc.text(` ${label}`, x + 2 + w, y + 3.3);
+}
+
+function drawPhoto(doc: jsPDF, foto: string, x: number, y: number) {
+  if (foto) {
+    const fmt = foto.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+    try { doc.addImage(foto, fmt, x + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
+    catch { drawPlaceholder(doc, x, y); }
+  } else {
+    drawPlaceholder(doc, x, y);
+  }
+}
+
 function drawEvidencia(
   doc: jsPDF,
   servico: CusteioServico,
-  regInicio: number,
-  regFim: number,
+  regStart: number,
   y: number,
 ): number {
   const xR = MX + PHOTO_W + 4;
-  const regL = `REG.${String(regInicio).padStart(3, '0')}`;
-  const regR = `REG.${String(regFim).padStart(3, '0')}`;
   const atividade = servico.atividade?.trim() || '—';
   const qtd = servico.quantidade?.trim() || '—';
 
@@ -121,19 +140,16 @@ function drawEvidencia(
   doc.setFillColor(...DBLUE);
   doc.rect(MX, y, CONT_W, HEADER_H, 'F');
 
-  // Label "ATIVIDADE" pequeno em azul claro
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(5.5);
   doc.setTextColor(...LBLUE);
   doc.text('ATIVIDADE', MX + 3, y + 3.5);
 
-  // Valor da atividade em branco
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(255, 255, 255);
   doc.text(atividade, MX + 3, y + 7.8);
 
-  // Pill de quantidade à direita
   const QTD_W = 24;
   const QTD_X = MX + CONT_W - QTD_W - 3;
   doc.setFillColor(...PILL_BLUE);
@@ -153,59 +169,57 @@ function drawEvidencia(
 
   y += HEADER_H;
 
-  // ── Linha de labels REG (azul claro) ───────────────────
+  // ── Linha REG.001 INÍCIO | REG.002 FINAL ───────────────
   doc.setFillColor(...LBLUE_LIGHT);
   doc.rect(MX, y, CONT_W, REG_H, 'F');
-
   const SEP_X = MX + PHOTO_W + 2;
   doc.setDrawColor(...LBLUE);
   doc.setLineWidth(0.3);
   doc.line(SEP_X, y, SEP_X, y + REG_H);
-
-  // REG.001 + INÍCIO
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6);
-  doc.setTextColor(...DBLUE);
-  doc.text(regL, MX + 2, y + 3.3);
-  const wL = doc.getTextWidth(regL);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...MID_BLUE);
-  doc.text(' INÍCIO', MX + 2 + wL, y + 3.3);
-
-  // REG.002 + FINAL
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6);
-  doc.setTextColor(...DBLUE);
-  doc.text(regR, xR + 2, y + 3.3);
-  const wR = doc.getTextWidth(regR);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...MID_BLUE);
-  doc.text(' FINAL', xR + 2 + wR, y + 3.3);
-
+  drawRegRow(doc, regStart, 'INÍCIO', MX, y);
+  drawRegRow(doc, regStart + 1, 'FINAL', xR, y);
   y += REG_H;
 
-  // ── Fotos ──────────────────────────────────────────────
+  // ── Par de fotos principal ──────────────────────────────
   doc.setDrawColor(...GRAY);
   doc.rect(MX, y, PHOTO_W, PHOTO_H);
   doc.rect(xR, y, PHOTO_W, PHOTO_H);
-
-  if (servico.fotoInicio) {
-    const fmt = servico.fotoInicio.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    try { doc.addImage(servico.fotoInicio, fmt, MX + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
-    catch { drawPlaceholder(doc, MX, y); }
-  } else {
-    drawPlaceholder(doc, MX, y);
-  }
-
-  if (servico.fotoFim) {
-    const fmt = servico.fotoFim.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-    try { doc.addImage(servico.fotoFim, fmt, xR + 0.5, y + 0.5, PHOTO_W - 1, PHOTO_H - 1); }
-    catch { drawPlaceholder(doc, xR, y); }
-  } else {
-    drawPlaceholder(doc, xR, y);
-  }
-
+  drawPhoto(doc, servico.fotoInicio, MX, y);
+  drawPhoto(doc, servico.fotoFim, xR, y);
   y += PHOTO_H + 4;
+
+  // ── Evidências extras ───────────────────────────────────
+  const extras = servico.fotosExtras ?? [];
+  for (let i = 0; i < extras.length; i += 2) {
+    if (y + REG_H + PHOTO_H + 4 > PAGE_H - MX) {
+      doc.addPage();
+      y = MX;
+    }
+    const regA = regStart + 2 + i;
+    const hasB = i + 1 < extras.length;
+    const regB = regA + 1;
+
+    doc.setFillColor(...LBLUE_LIGHT);
+    doc.rect(MX, y, CONT_W, REG_H, 'F');
+    if (hasB) {
+      doc.setDrawColor(...LBLUE);
+      doc.setLineWidth(0.3);
+      doc.line(SEP_X, y, SEP_X, y + REG_H);
+      drawRegRow(doc, regA, 'EVIDÊNCIA', MX, y);
+      drawRegRow(doc, regB, 'EVIDÊNCIA', xR, y);
+    } else {
+      drawRegRow(doc, regA, 'EVIDÊNCIA', MX, y);
+    }
+    y += REG_H;
+
+    doc.setDrawColor(...GRAY);
+    doc.rect(MX, y, PHOTO_W, PHOTO_H);
+    if (hasB) doc.rect(xR, y, PHOTO_W, PHOTO_H);
+    drawPhoto(doc, extras[i] ?? '', MX, y);
+    if (hasB) drawPhoto(doc, extras[i + 1] ?? '', xR, y);
+    y += PHOTO_H + 4;
+  }
+
   return y;
 }
 
@@ -238,8 +252,8 @@ export async function exportCusteioToPdf(
       doc.addPage();
       y = MX;
     }
-    y = drawEvidencia(doc, s, reg, reg + 1, y);
-    reg += 2;
+    y = drawEvidencia(doc, s, reg, y);
+    reg += 2 + (s.fotosExtras?.length ?? 0);
   }
 
   const fileName = buildCusteioExportFileName(cabecalho, 'pdf');
