@@ -201,14 +201,17 @@ function drawEvidencia(
 
     doc.setFillColor(...LBLUE_LIGHT);
     doc.rect(MX, y, CONT_W, REG_H, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.setTextColor(...DBLUE);
     if (hasB) {
       doc.setDrawColor(...LBLUE);
       doc.setLineWidth(0.3);
       doc.line(SEP_X, y, SEP_X, y + REG_H);
-      drawRegRow(doc, regA, 'EVIDÊNCIA', MX, y);
-      drawRegRow(doc, regB, 'EVIDÊNCIA', xR, y);
+      doc.text(`EVIDÊNCIA EXTRA ${i + 1}`, MX + 2, y + 3.3);
+      doc.text(`EVIDÊNCIA EXTRA ${i + 2}`, xR + 2, y + 3.3);
     } else {
-      drawRegRow(doc, regA, 'EVIDÊNCIA', MX, y);
+      doc.text(`EVIDÊNCIA EXTRA ${i + 1}`, MX + 2, y + 3.3);
     }
     y += REG_H;
 
