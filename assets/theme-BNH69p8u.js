@@ -1,0 +1,1 @@
+import{f as e}from"./index-GAXMTTU8.js";import{t}from"./theme-U2WdClvR.js";var n=e(()=>{t().init()});export{n as default};
