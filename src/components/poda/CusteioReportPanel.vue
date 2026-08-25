@@ -315,6 +315,10 @@
             <div
               v-if="servico.fotosExtras[extraIdx]"
               class="evidencia-zone evidencia-zone--filled relative-position"
+              :class="extraCellClass(servico.id, extraIdx)"
+              tabindex="0"
+              @click="selectExtraCell(servico.id, extraIdx, $event)"
+              @paste="(e) => handleExtraPaste(e, servico, extraIdx)"
             >
               <img
                 :src="servico.fotosExtras[extraIdx]"
@@ -327,7 +331,9 @@
             <div
               v-else
               class="evidencia-zone evidencia-zone--empty flex flex-center column"
+              :class="extraCellClass(servico.id, extraIdx)"
               tabindex="0"
+              @click="selectExtraCell(servico.id, extraIdx, $event)"
               @paste="(e) => handleExtraPaste(e, servico, extraIdx)"
             >
               <button type="button" class="evidencia-zone__upload-trigger" aria-label="Anexar imagem"
@@ -436,6 +442,7 @@ interface CellKey { id: number; tipo: Tipo }
 const selectedKey = ref<CellKey | null>(null);
 const draggedKey = ref<CellKey | null>(null);
 const dropTargetKey = ref<CellKey | null>(null);
+const selectedExtraKey = ref<{ id: number; idx: number } | null>(null);
 
 function keysEqual(a: CellKey | null, b: CellKey | null) {
   return !!a && !!b && a.id === b.id && a.tipo === b.tipo;
@@ -460,8 +467,22 @@ function setPhoto(s: CusteioServico, tipo: Tipo, v: string) {
 
 function selectCell(s: CusteioServico, tipo: Tipo, event?: Event) {
   selectedKey.value = { id: s.id, tipo };
+  selectedExtraKey.value = null;
   const t = event?.currentTarget;
   if (t instanceof HTMLElement) t.focus();
+}
+
+function selectExtraCell(servicoId: number, idx: number, event?: Event) {
+  selectedExtraKey.value = { id: servicoId, idx };
+  selectedKey.value = null;
+  const t = event?.currentTarget;
+  if (t instanceof HTMLElement) t.focus();
+}
+
+function extraCellClass(servicoId: number, idx: number) {
+  return {
+    'evidencia-zone--selected': selectedExtraKey.value?.id === servicoId && selectedExtraKey.value?.idx === idx,
+  };
 }
 
 const fotoRefs: Record<string, HTMLInputElement | null> = {};
