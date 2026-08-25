@@ -477,7 +477,7 @@ function triggerFotoExtra(servicoId: number, extraIdx: number) {
 }
 function addFotoExtra(s: CusteioServico) {
   if (!s.fotosExtras) s.fotosExtras = [];
-  s.fotosExtras.push('');
+  s.fotosExtras.push('', '');
 }
 function removeFotoExtra(s: CusteioServico, idx: number) {
   s.fotosExtras.splice(idx, 1);
