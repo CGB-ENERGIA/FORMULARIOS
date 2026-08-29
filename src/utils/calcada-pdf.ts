@@ -27,6 +27,7 @@ const BLOCKS_PER_PAGE = 1;
 const BLOCK_PITCH = 430;
 const FIRST_PG_TOP_CALCADA = 130;
 const FIRST_PG_TOP_CUSTEIO = 105;
+const COMPACT_HEADER_BOTTOM = 65; // top do bloco em páginas com cabeçalho compacto
 const PHOTO_OFFSET = 12;
 const PHOTO_H = 408;
 
@@ -89,7 +90,7 @@ function sectionBar(doc: jsPDF, title: string, top: number, bottom: number) {
   doc.text(title, CX, top + h - 2.4, { align: 'center' });
 }
 
-function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra | CusteioObra, includeReparo = true) {
+function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra | CusteioObra, includeReparo = true, compact = false) {
   const title = includeReparo ? 'EVIDÊNCIA REPARO DE CALÇADA' : 'EVIDÊNCIA CUSTEIO';
 
   box(doc, X0, 30, X1 - X0, 26, false);
@@ -99,6 +100,8 @@ function drawHeader(doc: jsPDF, logo: string, obra: CalcadaObra | CusteioObra, i
   doc.setFontSize(9);
   doc.setTextColor(...BLACK);
   doc.text(title, (LOGO_DIV_X + X1) / 2, 47, { align: 'center' });
+
+  if (compact) return;
 
   sectionBar(doc, 'DADOS OBRA', 59, 68);
   field(doc, 'PEP:', obra.pep, 37, 90, 90, 260, 71, 81);
@@ -198,9 +201,12 @@ export async function exportCalcadaToPdf(
       doc.addPage();
     }
     if (slot === 0) {
-      drawHeader(doc, logo, obra, true);
+      const isFirstPage = i === 0;
+      drawHeader(doc, logo, obra, true, !isFirstPage);
+      drawBlock(doc, required[i]!, 0, isFirstPage ? FIRST_PG_TOP_CALCADA : COMPACT_HEADER_BOTTOM);
+    } else {
+      drawBlock(doc, required[i]!, slot, FIRST_PG_TOP_CALCADA);
     }
-    drawBlock(doc, required[i]!, slot, FIRST_PG_TOP_CALCADA);
   }
 
   const fileName = buildCalcadaExportFileName(obra, 'pdf');
