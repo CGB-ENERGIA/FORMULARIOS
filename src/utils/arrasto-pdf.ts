@@ -53,7 +53,7 @@ const MATERIAIS_COL_HEADERS = [
 ] as const;
 
 const EV_START = ty(187);
-const PAGE_BOTTOM = 830;
+const PAGE_BOTTOM = 800; // deixa ~10pt de margem acima do rodapé (watermark em ~810pt)
 const EV_ROWS = 4;
 const EV_H = Math.floor((PAGE_BOTTOM - EV_START) / EV_ROWS);
 
@@ -171,7 +171,10 @@ function drawPageHeader(doc: jsPDF, title: string, logo: string, titleSize = 10)
   });
 
   try {
-    doc.addImage(logo, 'PNG', NEW_X0 + 8, hTop + 4, logoW - 16, hBot - hTop - 8);
+    const logoH = hBot - hTop - 8;
+    const logoW_rendered = logoH * 3.5;
+    const logoCellCenterX = (NEW_X0 + tx(164)) / 2;
+    doc.addImage(logo, 'PNG', logoCellCenterX - logoW_rendered / 2, hTop + 4, logoW_rendered, logoH);
   } catch {
     /* ignore */
   }
