@@ -60,7 +60,7 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: PodaCabecalho, y: num
     margin: { left: MX, right: MX },
     tableWidth: CONT_W,
     theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', lineColor: GRAY, lineWidth: 0.2 },
+    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', halign: 'center', lineColor: GRAY, lineWidth: 0.2 },
     headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     columnStyles: {
       0: { cellWidth: colW },
@@ -84,7 +84,7 @@ function drawHeader(doc: DocEx, banner: string, cabecalho: PodaCabecalho, y: num
     margin: { left: MX, right: MX },
     tableWidth: CONT_W,
     theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 2, valign: 'top', lineColor: GRAY, lineWidth: 0.2 },
+    styles: { fontSize: 6.5, cellPadding: 2, valign: 'middle', halign: 'center', lineColor: GRAY, lineWidth: 0.2 },
     headStyles: { fillColor: LBLUE, textColor: DBLUE, fontStyle: 'bold', halign: 'center', fontSize: 7 },
     head: [['DESCRIÇÃO DA OBRA']],
     body: [[cabecalho.descricaoObra || '—']],
