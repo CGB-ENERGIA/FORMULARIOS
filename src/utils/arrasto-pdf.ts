@@ -39,17 +39,17 @@ const yOff = NEW_Y0 - ORIG_Y0;
 const tx = (x: number) => NEW_X0 + (x - ORIG_X0) * xScale;
 const ty = (y: number) => y + yOff;
 
-const MATERIAIS_COL_RATIOS = [76, 51, 139, 166, 41, 50, 47, 42, 37];
+// Coluna1 removida; seus 37pt redistribuídos para DESCRIÇÃO
+const MATERIAIS_COL_RATIOS = [76, 51, 139, 203, 41, 50, 47, 42];
 const MATERIAIS_COL_HEADERS = [
-  'FAMILIA',
+  'FAMÍLIA',
   'TIPO',
   'MATERIAL',
-  'DESC_MATERIAL',
+  'DESCRIÇÃO',
   'UMB',
   'PESO',
   'QTD',
   'TOTAL',
-  'Coluna1',
 ] as const;
 
 const EV_START = ty(187);
@@ -188,12 +188,14 @@ function formatPesoTotalKg(value: number): string {
 
 function buildMateriaisColumnStyles(tableWidth: number) {
   const totalRatio = MATERIAIS_COL_RATIOS.reduce((sum, ratio) => sum + ratio, 0);
-  const styles: Record<number, { cellWidth: number; halign?: 'left' | 'center' }> = {};
+  const styles: Record<number, { cellWidth: number; halign?: 'left' | 'center' | 'right'; fontStyle?: string }> = {};
 
   MATERIAIS_COL_RATIOS.forEach((ratio, index) => {
     styles[index] = {
       cellWidth: (tableWidth * ratio) / totalRatio,
       ...(index === 3 ? { halign: 'left' as const } : {}),
+      ...(index === 5 || index === 7 ? { halign: 'right' as const } : {}),
+      ...(index === 7 ? { fontStyle: 'bold' } : {}),
     };
   });
 
@@ -258,8 +260,8 @@ function drawMateriaisArrastadosPage(
     styles: {
       fontSize: 7,
       cellPadding: 2.5,
-      lineColor: BLACK,
-      lineWidth: 0.4,
+      lineColor: [180, 160, 170] as [number, number, number],
+      lineWidth: 0.3,
       halign: 'center',
       valign: 'middle',
       textColor: RED,
@@ -271,7 +273,12 @@ function drawMateriaisArrastadosPage(
       fontStyle: 'bold',
       halign: 'center',
       fontSize: 7,
-      cellPadding: 3,
+      cellPadding: 3.5,
+      lineColor: [80, 20, 40] as [number, number, number],
+      lineWidth: 0.5,
+    },
+    alternateRowStyles: {
+      fillColor: [252, 245, 248] as [number, number, number],
     },
     head: [Array.from(MATERIAIS_COL_HEADERS)],
     body: materiaisPreenchidos.map(({ material, quantidade, total }) => [
@@ -283,7 +290,6 @@ function drawMateriaisArrastadosPage(
       formatNumeroBr(material.peso),
       String(quantidade),
       formatNumeroBr(total),
-      '',
     ]),
     columnStyles: buildMateriaisColumnStyles(tableWidth),
   });
