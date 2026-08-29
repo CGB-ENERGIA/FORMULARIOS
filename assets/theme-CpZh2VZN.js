@@ -1,1 +1,0 @@
-import{f as e}from"./index-DnGUclAI.js";import{t}from"./theme-74l6vA7G.js";var n=e(()=>{t().init()});export{n as default};
