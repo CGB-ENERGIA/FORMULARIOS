@@ -6,6 +6,7 @@ import { buildExportFileName } from './export-helpers';
 import { buildPdfBlobWithWatermark, savePdfWithWatermark } from './pdf-watermark';
 
 import { publicAsset } from './assets';
+import { compressAll, photoQuality } from './compress-image';
 
 const BANNER_URL = publicAsset('template/banner.png');
 
@@ -196,7 +197,7 @@ export async function buildConsumidoresPdfDocument(
     },
   });
 
-  drawFotoPages(doc, preenchidos);
+  await drawFotoPages(doc, preenchidos);
 
   return doc;
 }
@@ -302,9 +303,13 @@ function drawFotoCell(
   }
 }
 
-function drawFotoPages(doc: jsPDF, consumidores: Consumidor[]) {
+async function drawFotoPages(doc: jsPDF, consumidores: Consumidor[]) {
   const slots = collectFotoSlots(consumidores);
   if (slots.length === 0) return;
+
+  const quality = photoQuality(slots.length);
+  const compressed = await compressAll(slots.map((s) => s.dataUrl), quality);
+  const compressedSlots = slots.map((s, i) => ({ ...s, dataUrl: compressed[i]! }));
 
   const marginX = BANNER_X;
   const marginTop = 12;
@@ -325,7 +330,7 @@ function drawFotoPages(doc: jsPDF, consumidores: Consumidor[]) {
     doc.setTextColor(21, 101, 192);
     doc.text('Evidências Fotográficas', PAGE_WIDTH_MM / 2, 8, { align: 'center' });
 
-    const pageSlots = slots.slice(i, i + FOTOS_POR_PAGINA);
+    const pageSlots = compressedSlots.slice(i, i + FOTOS_POR_PAGINA);
     pageSlots.forEach((slot, index) => {
       const col = index % cols;
       const row = Math.floor(index / cols);

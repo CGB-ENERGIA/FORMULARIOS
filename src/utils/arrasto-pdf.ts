@@ -16,6 +16,7 @@ import type { ArrastoMaterial } from './arrasto-types';
 import { publicAsset } from './assets';
 import { buildArrastoExportFileName } from './export-helpers';
 import { savePdfWithWatermark } from './pdf-watermark';
+import { compressImage, photoQuality } from './compress-image';
 
 const CGB_LOGO_URL = publicAsset('template/cgb-logo.png');
 
@@ -315,6 +316,13 @@ export async function exportArrastoToPdf(
   const arrastoEmKm = calcularArrastoEmKm(arrastoEmM);
   const qtdACobrar = calcularQtdACobrar(pesoEmT, arrastoEmKm);
   const valorRs = calcularValorRs(qtdACobrar, precoUnitario);
+
+  const totalEvidencias = evidencias.filter(Boolean).length;
+  const q = photoQuality(totalEvidencias);
+  const compressedEvidencias = await Promise.all(
+    evidencias.map(async (e) => (e ? await compressImage(e, q) : null)),
+  );
+
   const logo = await loadCgbLogoBase64();
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as DocEx;
@@ -437,11 +445,11 @@ export async function exportArrastoToPdf(
 
     vertLabel(doc, lblL_X0, y0, lblL_X1, y1, labels[idxL]!);
     drawCell(doc, lblL_X1, y0, imgL_X1, y1, {});
-    drawEvidImg(doc, evidencias[idxL], lblL_X1, y0, imgL_X1, y1);
+    drawEvidImg(doc, compressedEvidencias[idxL], lblL_X1, y0, imgL_X1, y1);
 
     vertLabel(doc, lblR_X0, y0, lblR_X1, y1, labels[idxR]!);
     drawCell(doc, imgR_X0, y0, NEW_X1, y1, {});
-    drawEvidImg(doc, evidencias[idxR], imgR_X0, y0, NEW_X1, y1);
+    drawEvidImg(doc, compressedEvidencias[idxR], imgR_X0, y0, NEW_X1, y1);
   }
 
   drawMateriaisArrastadosPage(doc, logo, quantidades, materiais, pesoTotalBruto);

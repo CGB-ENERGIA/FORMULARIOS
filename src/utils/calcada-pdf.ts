@@ -4,6 +4,7 @@ import { quantidadeEvidenciasRequeridas, validateCalcadaEvidencias } from './cal
 import { calcularValorRs, formatBRL } from './calcada-helpers';
 import { buildCalcadaExportFileName } from './export-helpers';
 import { savePdfWithWatermark } from './pdf-watermark';
+import { compressImage, photoQuality } from './compress-image';
 import { publicAsset } from './assets';
 
 const LOGO_URL = publicAsset('template/calcada-logo.png');
@@ -192,10 +193,19 @@ export async function exportCalcadaToPdf(
 
   const required = evidencias.slice(0, quantidadeEvidenciasRequeridas(obra.quantidade));
 
+  const q = photoQuality(required.length * 2);
+  const compressedRequired = await Promise.all(
+    required.map(async (ev) => ({
+      ...ev,
+      fotoAntes: await compressImage(ev.fotoAntes, q),
+      fotoDepois: await compressImage(ev.fotoDepois, q),
+    })),
+  );
+
   const logo = await loadLogoBase64();
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' }) as DocPt;
 
-  for (let i = 0; i < required.length; i++) {
+  for (let i = 0; i < compressedRequired.length; i++) {
     const slot = i % BLOCKS_PER_PAGE;
     if (i > 0 && slot === 0) {
       doc.addPage();
@@ -203,9 +213,9 @@ export async function exportCalcadaToPdf(
     if (slot === 0) {
       const isFirstPage = i === 0;
       drawHeader(doc, logo, obra, true, !isFirstPage);
-      drawBlock(doc, required[i]!, 0, isFirstPage ? FIRST_PG_TOP_CALCADA : COMPACT_HEADER_BOTTOM);
+      drawBlock(doc, compressedRequired[i]!, 0, isFirstPage ? FIRST_PG_TOP_CALCADA : COMPACT_HEADER_BOTTOM);
     } else {
-      drawBlock(doc, required[i]!, slot, FIRST_PG_TOP_CALCADA);
+      drawBlock(doc, compressedRequired[i]!, slot, FIRST_PG_TOP_CALCADA);
     }
   }
 

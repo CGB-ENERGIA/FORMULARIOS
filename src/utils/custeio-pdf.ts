@@ -6,6 +6,7 @@ import { publicAsset } from './assets';
 import { buildCusteioExportFileName } from './export-helpers';
 import { formatDistritalLabel } from './arrasto-helpers';
 import { savePdfWithWatermark } from './pdf-watermark';
+import { compressImage, compressAll, photoQuality } from './compress-image';
 
 const BANNER_URL = publicAsset('template/banner.png');
 
@@ -243,6 +244,18 @@ export async function exportCusteioToPdf(
     throw new Error('Preencha ao menos um serviço antes de exportar.');
   }
 
+  // Compressão de imagens antes de gerar o PDF
+  const allUrls = preenchidos.flatMap((s) => [s.fotoInicio, s.fotoFim, ...(s.fotosExtras ?? [])]);
+  const q = photoQuality(allUrls.filter(Boolean).length);
+  const compressedServicos = await Promise.all(
+    preenchidos.map(async (s) => ({
+      ...s,
+      fotoInicio: await compressImage(s.fotoInicio, q),
+      fotoFim: await compressImage(s.fotoFim, q),
+      fotosExtras: await compressAll(s.fotosExtras ?? [], q),
+    })),
+  );
+
   const banner = await loadBannerBase64();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' }) as DocEx;
 
@@ -250,7 +263,7 @@ export async function exportCusteioToPdf(
   y = drawHeader(doc, banner, cabecalho, y);
 
   let reg = 1;
-  for (const s of preenchidos) {
+  for (const s of compressedServicos) {
     if (y + SEC_H > PAGE_H - MX) {
       doc.addPage();
       y = MX;

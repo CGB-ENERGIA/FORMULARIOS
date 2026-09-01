@@ -7,6 +7,7 @@ import { buildPodaExportFileName } from './export-helpers';
 import { formatDistritalLabel } from './arrasto-helpers';
 import { validatePodaCabecalho } from './poda-helpers';
 import { savePdfWithWatermark } from './pdf-watermark';
+import { compressImage, photoQuality } from './compress-image';
 
 const BANNER_URL = publicAsset('template/banner.png');
 
@@ -197,6 +198,15 @@ export async function exportPodaToPdf(
     throw new Error('Preencha ao menos um serviço antes de exportar.');
   }
 
+  const q = photoQuality(preenchidos.length * 2);
+  const compressedServicos = await Promise.all(
+    preenchidos.map(async (s) => ({
+      ...s,
+      fotoInicio: await compressImage(s.fotoInicio, q),
+      fotoFim: await compressImage(s.fotoFim, q),
+    })),
+  );
+
   const banner = await loadBannerBase64();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' }) as DocEx;
 
@@ -205,8 +215,8 @@ export async function exportPodaToPdf(
 
   y = drawHeader(doc, banner, cabecalho, y);
 
-  for (let i = 0; i < preenchidos.length; i++) {
-    const s = preenchidos[i]!;
+  for (let i = 0; i < compressedServicos.length; i++) {
+    const s = compressedServicos[i]!;
 
     // Nova página se não couber a seção inteira
     if (y + SEC_H > PAGE_H - MX) {
