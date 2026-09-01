@@ -734,6 +734,7 @@ function handleReset() {
     persistent: true,
   }).onOk(() => {
     resetForm();
+    cadastroStore.resetForm();
     obraValidacaoAtiva.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });

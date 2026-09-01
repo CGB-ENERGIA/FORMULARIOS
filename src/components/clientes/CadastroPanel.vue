@@ -277,13 +277,14 @@
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
               <q-input
-                v-model="form.nomeResponsavel"
+                :model-value="form.nomeResponsavel"
                 label="Nome do encarregado *"
                 outlined
                 dense
                 hide-bottom-space
                 :error="validacaoAtiva && !form.nomeResponsavel.trim()"
                 error-message="Informe o encarregado"
+                @update:model-value="(v) => syncNomeResponsavel(String(v))"
               />
             </div>
             <div class="col-12 col-md-3">
@@ -362,7 +363,7 @@ const $q = useQuasar();
 const store = useCadastroStore();
 const consumidoresStore = useConsumidoresStore();
 const { form, clientes, ativo, possuiTransformador } = storeToRefs(store);
-const { selectCliente, addCliente, removeCliente, resetForm } = store;
+const { selectCliente, addCliente, removeCliente, resetForm, syncNomeResponsavel } = store;
 
 const validacaoAtiva = ref(false);
 
@@ -408,6 +409,7 @@ function handleReset() {
     persistent: true,
   }).onOk(() => {
     resetForm();
+    consumidoresStore.resetForm();
     validacaoAtiva.value = false;
     $q.notify({ type: 'info', message: 'Formulário limpo.' });
   });

@@ -78,7 +78,7 @@ export function createClienteFromBase(base: CadastroForm): CadastroForm {
     fabricante: base.fabricante,
     dataFabr: base.dataFabr,
     numSerie: base.numSerie,
-    nomeResponsavel: '',
+    nomeResponsavel: base.nomeResponsavel,
     dataExecucao: '',
     horaExecucao: '',
     empresa: 'CGB ENERGIA',
@@ -210,6 +210,12 @@ export const useCadastroStore = defineStore('cadastro', () => {
     clearPersistedState();
   }
 
+  function syncNomeResponsavel(value: string) {
+    clientes.value.forEach((c) => {
+      c.nomeResponsavel = value;
+    });
+  }
+
   function replaceClientes(next: CadastroForm[]) {
     const list = next.length > 0 ? next.map((item) => normalizeForm(item)) : [createDefaultCadastroForm()];
     clientes.value = list;
@@ -227,5 +233,6 @@ export const useCadastroStore = defineStore('cadastro', () => {
     resetForm,
     replaceClientes,
     setPossuiTransformador,
+    syncNomeResponsavel,
   };
 });
